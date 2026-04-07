@@ -1,4 +1,13 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+function normalizeBaseUrl(value: string | undefined): string {
+  return (value ?? "").trim().replace(/\/+$/, "");
+}
+
+function getBaseUrl(): string {
+  return normalizeBaseUrl(
+    window.__EN_LEARNER_RUNTIME_CONFIG?.apiBaseUrl ??
+      import.meta.env.VITE_API_BASE_URL
+  );
+}
 
 class ApiError extends Error {
   constructor(
@@ -15,7 +24,7 @@ async function request<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = `${BASE_URL}/api${path}`;
+  const url = `${getBaseUrl()}/api${path}`;
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",

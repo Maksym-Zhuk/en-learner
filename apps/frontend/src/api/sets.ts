@@ -1,5 +1,10 @@
 import { api } from "./client";
-import type { StudySet, WordEntry } from "@/types";
+import type {
+  CreateSetRequest,
+  StudySet,
+  UpdateSetRequest,
+  WordEntry,
+} from "@/types";
 
 export const setsApi = {
   list: () => api.get<StudySet[]>("/sets"),
@@ -7,9 +12,9 @@ export const setsApi = {
   get: (id: string) => api.get<StudySet>(`/sets/${id}`),
 
   create: (name: string, description?: string) =>
-    api.post<StudySet>("/sets", { name, description }),
+    api.post<StudySet>("/sets", { name, description } satisfies CreateSetRequest),
 
-  update: (id: string, data: { name?: string; description?: string | null }) =>
+  update: (id: string, data: UpdateSetRequest) =>
     api.put<StudySet>(`/sets/${id}`, data),
 
   delete: (id: string) => api.delete(`/sets/${id}`),

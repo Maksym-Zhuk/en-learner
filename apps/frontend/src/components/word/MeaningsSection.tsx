@@ -3,9 +3,13 @@ import type { Meaning } from "@/types";
 
 interface MeaningsSectionProps {
   meanings: Meaning[];
+  onLookupWord?: (word: string) => void;
 }
 
-export function MeaningsSection({ meanings }: MeaningsSectionProps) {
+export function MeaningsSection({
+  meanings,
+  onLookupWord,
+}: MeaningsSectionProps) {
   if (meanings.length === 0) {
     return (
       <p className="text-sm text-gray-500 italic">No definitions available.</p>
@@ -35,17 +39,18 @@ export function MeaningsSection({ meanings }: MeaningsSectionProps) {
                     </p>
                   )}
                   {def.synonyms.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      <span className="text-xs font-medium text-gray-400">syn:</span>
-                      {def.synonyms.slice(0, 5).map((s) => (
-                        <span
-                          key={s}
-                          className="text-xs text-brand-600 dark:text-brand-400 cursor-pointer hover:underline"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
+                    <WordGroup
+                      label="Synonyms"
+                      words={def.synonyms}
+                      onLookupWord={onLookupWord}
+                    />
+                  )}
+                  {def.antonyms.length > 0 && (
+                    <WordGroup
+                      label="Antonyms"
+                      words={def.antonyms}
+                      onLookupWord={onLookupWord}
+                    />
                   )}
                 </div>
               </li>
@@ -53,6 +58,39 @@ export function MeaningsSection({ meanings }: MeaningsSectionProps) {
           </ol>
         </div>
       ))}
+    </div>
+  );
+}
+
+interface WordGroupProps {
+  label: string;
+  words: string[];
+  onLookupWord?: (word: string) => void;
+}
+
+function WordGroup({ label, words, onLookupWord }: WordGroupProps) {
+  return (
+    <div className="flex flex-wrap items-start gap-1.5 pt-1">
+      <span className="pt-1 text-xs font-medium text-gray-400">{label}:</span>
+      {words.slice(0, 6).map((word) =>
+        onLookupWord ? (
+          <button
+            key={word}
+            type="button"
+            onClick={() => onLookupWord(word)}
+            className="rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition-colors hover:border-brand-300 hover:bg-brand-100 dark:border-brand-900 dark:bg-brand-950/40 dark:text-brand-300 dark:hover:border-brand-800 dark:hover:bg-brand-950/70"
+          >
+            {word}
+          </button>
+        ) : (
+          <span
+            key={word}
+            className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300"
+          >
+            {word}
+          </span>
+        )
+      )}
     </div>
   );
 }

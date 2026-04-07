@@ -1,4 +1,10 @@
-import { Heart, BookmarkPlus, BookmarkCheck, Plus } from "lucide-react";
+import {
+  BookmarkCheck,
+  BookmarkPlus,
+  Heart,
+  Loader,
+  Plus,
+} from "lucide-react";
 import { Button, Tooltip } from "@/components/ui";
 import { AudioButton } from "./AudioButton";
 import type { WordEntry } from "@/types";
@@ -11,6 +17,7 @@ interface WordHeaderProps {
   onUnfavorite: () => void;
   onAddToSet: () => void;
   saving?: boolean;
+  favoriting?: boolean;
 }
 
 export function WordHeader({
@@ -21,10 +28,10 @@ export function WordHeader({
   onUnfavorite,
   onAddToSet,
   saving,
+  favoriting,
 }: WordHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      {/* Left: word info */}
+    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
       <div className="min-w-0">
         <h1 className="text-3xl font-bold tracking-tight">{entry.word}</h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
@@ -45,48 +52,77 @@ export function WordHeader({
             </span>
           </div>
         )}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+              entry.is_saved
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            }`}
+          >
+            {entry.is_saved ? "In library" : "Not saved yet"}
+          </span>
+          {entry.is_favorite && (
+            <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600 dark:bg-red-950/40 dark:text-red-300">
+              Favorite
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Right: action buttons */}
-      <div className="flex flex-shrink-0 items-center gap-1.5">
-        <Tooltip content={entry.is_favorite ? "Remove from favorites" : "Add to favorites"}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={entry.is_favorite ? onUnfavorite : onFavorite}
-            className={entry.is_favorite ? "text-red-500 hover:text-red-600" : ""}
-          >
-            <Heart
-              className="h-4 w-4"
-              fill={entry.is_favorite ? "currentColor" : "none"}
-            />
-          </Button>
-        </Tooltip>
-
-        <Tooltip content="Add to study set">
-          <Button variant="ghost" size="icon" onClick={onAddToSet}>
+      <div className="flex flex-col items-start gap-3 md:items-end">
+        <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={onAddToSet}>
             <Plus className="h-4 w-4" />
+            Add to set
           </Button>
-        </Tooltip>
 
-        <Button
-          variant={entry.is_saved ? "secondary" : "primary"}
-          size="sm"
-          onClick={entry.is_saved ? onUnsave : onSave}
-          loading={saving}
-        >
-          {entry.is_saved ? (
-            <>
-              <BookmarkCheck className="h-4 w-4" />
-              Saved
-            </>
-          ) : (
-            <>
-              <BookmarkPlus className="h-4 w-4" />
-              Save
-            </>
-          )}
-        </Button>
+          <Tooltip content={entry.is_favorite ? "Remove from favorites" : "Add to favorites"}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={entry.is_favorite ? onUnfavorite : onFavorite}
+              disabled={favoriting}
+              className={entry.is_favorite ? "text-red-500 hover:text-red-600" : ""}
+              aria-label={entry.is_favorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              {favoriting ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart
+                  className="h-4 w-4"
+                  fill={entry.is_favorite ? "currentColor" : "none"}
+                />
+              )}
+            </Button>
+          </Tooltip>
+
+          <Button
+            variant={entry.is_saved ? "secondary" : "primary"}
+            size="sm"
+            onClick={entry.is_saved ? onUnsave : onSave}
+            loading={saving}
+          >
+            {entry.is_saved ? (
+              <>
+                <BookmarkCheck className="h-4 w-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <BookmarkPlus className="h-4 w-4" />
+                Save
+              </>
+            )}
+          </Button>
+        </div>
+
+        <p className="text-xs text-gray-400 md:max-w-xs md:text-right">
+          {entry.is_saved
+            ? "Saved words stay in your library and can be added to any study set."
+            : "Save this word or add it to a study set to keep it in your library."}
+        </p>
       </div>
     </div>
   );
