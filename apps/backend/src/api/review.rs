@@ -74,6 +74,26 @@ pub struct SessionSummary {
     pub duration_ms: i64,
 }
 
+#[derive(Serialize)]
+pub struct PublicTestLinkResponse {
+    pub token: String,
+    pub set_id: String,
+    pub set_name: String,
+    pub cards_count: i64,
+    pub api_path: String,
+    pub web_path: String,
+}
+
+#[derive(Serialize)]
+pub struct PublicTestDeckResponse {
+    pub token: String,
+    pub set_id: String,
+    pub set_name: String,
+    pub set_description: Option<String>,
+    pub cards: Vec<ReviewCardResponse>,
+    pub total: usize,
+}
+
 // ---- Handlers ---------------------------------------------------------
 
 /// GET /api/review/session?set_id=&limit=
@@ -221,7 +241,97 @@ pub async fn session_summary(
     Ok(Json(load_session_summary(&conn, &id)?))
 }
 
+/// POST /api/sets/:id/share-test
+pub async fn create_public_set_test_link(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<PublicTestLinkResponse>> {
+    let conn = state.db.get()?;
+    let set = load_public_set_meta(&conn, &id)?
+        .ok_or_else(|| AppError::NotFound(format!("Set '{}' not found", id)))?;
+
+    let token = conn
+        .query_row(
+            "SELECT token FROM public_test_links WHERE set_id = ?1",
+            params![id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?
+        .unwrap_or_else(|| Uuid::new_v4().simple().to_string());
+
+    conn.execute(
+        "INSERT INTO public_test_links (token, set_id, last_accessed_at)
+         VALUES (?1, ?2, strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+         ON CONFLICT(set_id) DO UPDATE SET
+            token = excluded.token,
+            last_accessed_at = excluded.last_accessed_at",
+        params![token, id],
+    )?;
+
+    let cards_count = count_cards_for_set(&conn, &id)?;
+
+    Ok(Json(PublicTestLinkResponse {
+        token: token.clone(),
+        set_id: id,
+        set_name: set.name,
+        cards_count,
+        api_path: format!("/api/public/tests/{token}"),
+        web_path: format!("/#/public/tests/{token}"),
+    }))
+}
+
+/// GET /api/public/tests/:token
+pub async fn public_test_deck(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> Result<Json<PublicTestDeckResponse>> {
+    let conn = state.db.get()?;
+    let set = conn
+        .query_row(
+            "SELECT s.id, s.name, s.description
+             FROM public_test_links ptl
+             JOIN study_sets s ON s.id = ptl.set_id
+             WHERE ptl.token = ?1",
+            params![token],
+            |row| {
+                Ok(PublicSetMeta {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                })
+            },
+        )
+        .optional()?
+        .ok_or_else(|| AppError::NotFound("Public test link not found".into()))?;
+
+    conn.execute(
+        "UPDATE public_test_links
+         SET last_accessed_at = strftime('%Y-%m-%dT%H:%M:%SZ','now')
+         WHERE token = ?1",
+        params![token],
+    )?;
+
+    let cards = query_public_cards_for_set(&conn, &set.id)?;
+    let total = cards.len();
+
+    Ok(Json(PublicTestDeckResponse {
+        token,
+        set_id: set.id,
+        set_name: set.name,
+        set_description: set.description,
+        cards,
+        total,
+    }))
+}
+
 // ---- Helpers ----------------------------------------------------------
+
+#[derive(Debug)]
+struct PublicSetMeta {
+    id: String,
+    name: String,
+    description: Option<String>,
+}
 
 fn query_all_due_cards(
     conn: &rusqlite::Connection,
@@ -281,6 +391,46 @@ fn query_cards_for_set(
          LIMIT ?3",
     )?;
     collect_cards(&mut stmt, params![set_id, now, limit])
+}
+
+fn query_public_cards_for_set(
+    conn: &rusqlite::Connection,
+    set_id: &str,
+) -> Result<Vec<ReviewCardResponse>> {
+    let mut stmt = conn.prepare(
+        "SELECT rc.id, rc.word_id, w.word,
+                (SELECT t.text
+                 FROM translations t
+                 WHERE t.word_id = w.id AND t.target_lang = 'uk'
+                 ORDER BY t.created_at ASC
+                 LIMIT 1) as translation_uk,
+                (SELECT ph.text
+                 FROM phonetics ph
+                 WHERE ph.word_id = w.id AND ph.text IS NOT NULL
+                 ORDER BY ph.rowid ASC
+                 LIMIT 1) as phonetic_text,
+                (SELECT definition FROM definitions d
+                 JOIN meanings m ON m.id = d.meaning_id
+                 WHERE m.word_id = w.id ORDER BY m.position, d.position LIMIT 1) as primary_def,
+                (SELECT example FROM definitions d
+                 JOIN meanings m ON m.id = d.meaning_id
+                 WHERE m.word_id = w.id AND d.example IS NOT NULL
+                 ORDER BY m.position, d.position LIMIT 1) as primary_ex,
+                rc.face, rc.state, rc.due_at, rc.interval_days,
+                rc.ease_factor, rc.reps, rc.lapses, rc.last_reviewed_at
+         FROM study_set_words sw
+         JOIN words w ON w.id = sw.word_id
+         JOIN review_cards rc ON rc.word_id = w.id
+         WHERE sw.set_id = ?1
+         ORDER BY LOWER(w.word) ASC,
+                  CASE rc.face
+                      WHEN 'en_to_uk' THEN 0
+                      WHEN 'uk_to_en' THEN 1
+                      WHEN 'definition_to_word' THEN 2
+                      ELSE 3
+                  END ASC",
+    )?;
+    collect_cards(&mut stmt, params![set_id])
 }
 
 fn collect_cards(
@@ -344,9 +494,41 @@ fn load_session_summary(conn: &rusqlite::Connection, id: &str) -> Result<Session
     })
 }
 
+fn load_public_set_meta(
+    conn: &rusqlite::Connection,
+    set_id: &str,
+) -> Result<Option<PublicSetMeta>> {
+    Ok(conn
+        .query_row(
+            "SELECT id, name, description FROM study_sets WHERE id = ?1",
+            params![set_id],
+            |row| {
+                Ok(PublicSetMeta {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                })
+            },
+        )
+        .optional()?)
+}
+
+fn count_cards_for_set(conn: &rusqlite::Connection, set_id: &str) -> Result<i64> {
+    let total = conn.query_row(
+        "SELECT COUNT(rc.id)
+         FROM study_set_words sw
+         JOIN review_cards rc ON rc.word_id = sw.word_id
+         WHERE sw.set_id = ?1",
+        params![set_id],
+        |row| row.get(0),
+    )?;
+    Ok(total)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::load_session_summary;
+    use super::{count_cards_for_set, load_session_summary, query_public_cards_for_set};
+    use rusqlite::params;
 
     #[test]
     fn session_summary_counts_only_its_own_logs() {
@@ -393,5 +575,106 @@ mod tests {
         assert_eq!(summary.again_count, 1);
         assert_eq!(summary.good_count, 0);
         assert_eq!(summary.easy_count, 0);
+    }
+
+    #[test]
+    fn public_cards_for_set_return_all_faces_without_duplicates() {
+        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
+        conn.execute_batch(
+            "CREATE TABLE study_set_words (set_id TEXT NOT NULL, word_id TEXT NOT NULL);
+             CREATE TABLE words (id TEXT PRIMARY KEY, word TEXT NOT NULL);
+             CREATE TABLE review_cards (
+                id TEXT PRIMARY KEY,
+                word_id TEXT NOT NULL,
+                face TEXT NOT NULL,
+                state TEXT NOT NULL,
+                due_at TEXT NOT NULL,
+                interval_days REAL NOT NULL,
+                ease_factor REAL NOT NULL,
+                reps INTEGER NOT NULL,
+                lapses INTEGER NOT NULL,
+                last_reviewed_at TEXT
+             );
+             CREATE TABLE translations (
+                id TEXT PRIMARY KEY,
+                word_id TEXT NOT NULL,
+                target_lang TEXT NOT NULL,
+                text TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+             );
+             CREATE TABLE phonetics (
+                id TEXT PRIMARY KEY,
+                word_id TEXT NOT NULL,
+                text TEXT,
+                audio_url TEXT
+             );
+             CREATE TABLE meanings (
+                id TEXT PRIMARY KEY,
+                word_id TEXT NOT NULL,
+                part_of_speech TEXT NOT NULL,
+                position INTEGER NOT NULL DEFAULT 0
+             );
+             CREATE TABLE definitions (
+                id TEXT PRIMARY KEY,
+                meaning_id TEXT NOT NULL,
+                definition TEXT NOT NULL,
+                example TEXT,
+                position INTEGER NOT NULL DEFAULT 0
+             );",
+        )
+        .expect("schema");
+
+        conn.execute(
+            "INSERT INTO study_set_words (set_id, word_id) VALUES ('set-1', 'word-1')",
+            [],
+        )
+        .expect("insert set word");
+        conn.execute(
+            "INSERT INTO words (id, word) VALUES ('word-1', 'apple')",
+            [],
+        )
+        .expect("insert word");
+        conn.execute(
+            "INSERT INTO translations (id, word_id, target_lang, text) VALUES ('tr-1', 'word-1', 'uk', 'яблуко')",
+            [],
+        )
+        .expect("insert translation");
+        conn.execute(
+            "INSERT INTO phonetics (id, word_id, text) VALUES ('ph-1', 'word-1', '/a/'), ('ph-2', 'word-1', '/b/')",
+            [],
+        )
+        .expect("insert phonetics");
+        conn.execute(
+            "INSERT INTO meanings (id, word_id, part_of_speech, position) VALUES ('meaning-1', 'word-1', 'noun', 0)",
+            [],
+        )
+        .expect("insert meaning");
+        conn.execute(
+            "INSERT INTO definitions (id, meaning_id, definition, example, position) VALUES ('def-1', 'meaning-1', 'fruit', 'An apple a day', 0)",
+            [],
+        )
+        .expect("insert definition");
+
+        for (id, face) in [
+            ("card-1", "en_to_uk"),
+            ("card-2", "uk_to_en"),
+            ("card-3", "definition_to_word"),
+            ("card-4", "example_to_word"),
+        ] {
+            conn.execute(
+                "INSERT INTO review_cards
+                    (id, word_id, face, state, due_at, interval_days, ease_factor, reps, lapses)
+                 VALUES (?1, 'word-1', ?2, 'new', '2026-04-07T18:00:00Z', 0, 2.5, 0, 0)",
+                params![id, face],
+            )
+            .expect("insert review card");
+        }
+
+        let cards = query_public_cards_for_set(&conn, "set-1").expect("public cards");
+
+        assert_eq!(cards.len(), 4);
+        assert_eq!(cards[0].translation_uk.as_deref(), Some("яблуко"));
+        assert_eq!(cards[0].phonetic_text.as_deref(), Some("/a/"));
+        assert_eq!(count_cards_for_set(&conn, "set-1").expect("count"), 4);
     }
 }

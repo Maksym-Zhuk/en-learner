@@ -121,6 +121,24 @@ export interface SessionSummary {
   duration_ms: number;
 }
 
+export interface PublicTestLink {
+  token: string;
+  set_id: string;
+  set_name: string;
+  cards_count: number;
+  api_path: string;
+  web_path: string;
+}
+
+export interface PublicTestDeck {
+  token: string;
+  set_id: string;
+  set_name: string;
+  set_description: string | null;
+  cards: ReviewCard[];
+  total: number;
+}
+
 // --- Dashboard ---
 
 export interface DashboardStats {
@@ -129,7 +147,7 @@ export interface DashboardStats {
   current_streak_days: number;
   total_reviews_today: number;
   hardest_words: HardWord[];
-  recent_sets?: StudySet[];
+  recent_sets: StudySet[];
   recent_words: RecentWord[];
   words_by_state: WordsByState;
 }
@@ -154,6 +172,7 @@ export interface SearchHistoryEntry {
   id: string;
   query: string;
   word_id: string | null;
+  word: string | null;
   searched_at: string;
 }
 

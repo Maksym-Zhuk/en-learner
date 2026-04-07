@@ -1,14 +1,12 @@
 import { api } from "./client";
-import type { ReviewSession, SubmitReviewResponse } from "@/types";
-
-export interface SessionSummary {
-  total_reviewed: number;
-  again_count: number;
-  hard_count: number;
-  good_count: number;
-  easy_count: number;
-  duration_ms: number;
-}
+import type {
+  PublicTestDeck,
+  PublicTestLink,
+  ReviewSession,
+  SessionSummary,
+  SubmitReviewRequest,
+  SubmitReviewResponse,
+} from "@/types";
 
 export const reviewApi = {
   startSession: (setId?: string, limit?: number) => {
@@ -19,13 +17,15 @@ export const reviewApi = {
     return api.get<ReviewSession>(`/review/session${qs ? "?" + qs : ""}`);
   },
 
-  submit: (data: {
-    session_id: string;
-    card_id: string;
-    rating: string;
-    time_spent_ms: number;
-  }) => api.post<SubmitReviewResponse>("/review/submit", data),
+  submit: (data: SubmitReviewRequest) =>
+    api.post<SubmitReviewResponse>("/review/submit", data),
 
   summary: (sessionId: string) =>
     api.get<SessionSummary>(`/review/session/${sessionId}/summary`),
+
+  createPublicTestLink: (setId: string) =>
+    api.post<PublicTestLink>(`/sets/${setId}/share-test`),
+
+  getPublicTestDeck: (token: string) =>
+    api.get<PublicTestDeck>(`/public/tests/${token}`),
 };

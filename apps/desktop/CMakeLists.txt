@@ -21,8 +21,16 @@ add_executable(en-learner
     src/main.cpp
 )
 
+find_path(SQLITE3_INCLUDE_DIR sqlite3.h)
+find_library(SQLITE3_LIBRARY NAMES sqlite3)
+
+if(NOT SQLITE3_INCLUDE_DIR OR NOT SQLITE3_LIBRARY)
+    message(FATAL_ERROR "sqlite3 development files not found")
+endif()
+
 target_include_directories(en-learner PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${SQLITE3_INCLUDE_DIR}
 )
 
 # ---- Platform-specific dependencies ---------------------------------------
@@ -31,7 +39,7 @@ if(APPLE)
     # WebKit / WebView on macOS
     find_library(WEBKIT_LIB WebKit)
     find_library(COCOA_LIB Cocoa)
-    target_link_libraries(en-learner PRIVATE ${WEBKIT_LIB} ${COCOA_LIB})
+    target_link_libraries(en-learner PRIVATE ${WEBKIT_LIB} ${COCOA_LIB} ${SQLITE3_LIBRARY})
     set_target_properties(en-learner PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_BUNDLE_NAME "en-learner"
@@ -50,6 +58,7 @@ elseif(UNIX AND NOT APPLE)
     target_link_libraries(en-learner PRIVATE
         ${GTK3_LIBRARIES}
         ${WEBKIT_LIBRARIES}
+        ${SQLITE3_LIBRARY}
     )
     target_compile_options(en-learner PRIVATE
         ${GTK3_CFLAGS_OTHER}
@@ -59,6 +68,7 @@ elseif(UNIX AND NOT APPLE)
 elseif(WIN32)
     target_link_libraries(en-learner PRIVATE
         advapi32 ole32 shell32 shlwapi version
+        ${SQLITE3_LIBRARY}
     )
     set_target_properties(en-learner PROPERTIES
         WIN32_EXECUTABLE TRUE

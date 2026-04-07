@@ -1,5 +1,6 @@
 use crate::AppState;
 use axum::{
+    response::IntoResponse,
     routing::{delete, get, post},
     Router,
 };
@@ -13,6 +14,7 @@ pub mod words;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/health", get(health))
         // Words / search
         .route("/words/search", get(words::search))
         .route("/words/saved", get(words::list_saved))
@@ -30,6 +32,10 @@ pub fn router() -> Router<AppState> {
                 .delete(sets::delete_set),
         )
         .route(
+            "/sets/:id/share-test",
+            post(review::create_public_set_test_link),
+        )
+        .route(
             "/sets/:id/words",
             get(sets::list_set_words).post(sets::add_word_to_set),
         )
@@ -43,6 +49,7 @@ pub fn router() -> Router<AppState> {
         .route("/review/session", get(review::start_session))
         .route("/review/submit", post(review::submit_review))
         .route("/review/session/:id/summary", get(review::session_summary))
+        .route("/public/tests/:token", get(review::public_test_deck))
         // Dashboard
         .route("/dashboard/stats", get(dashboard::stats))
         // History
@@ -53,4 +60,8 @@ pub fn router() -> Router<AppState> {
             "/settings",
             get(settings::get_settings).put(settings::update_settings),
         )
+}
+
+async fn health() -> impl IntoResponse {
+    axum::Json(serde_json::json!({ "ok": true }))
 }

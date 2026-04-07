@@ -16,6 +16,8 @@ export type {
   SubmitReviewRequest,
   SubmitReviewResponse,
   SessionSummary,
+  PublicTestLink,
+  PublicTestDeck,
   DashboardStats,
   HardWord,
   WordsByState,

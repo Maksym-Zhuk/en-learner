@@ -20,12 +20,14 @@ en-learner/
 └── package.json         Root workspace
 ```
 
-**Data flow:**
+**Independent parts:**
 ```
-Desktop (C++) → spawns → Backend (Rust) → proxies → dictionaryapi.dev + lingva.ml
-                                        ← caches in SQLite
-Frontend (React) → HTTP → Backend API
-Desktop → loads → Frontend (Vite dev server OR built static files)
+Backend (Rust)  → standalone API service, deployable publicly
+Frontend (React) → standalone SPA with configurable API base URL
+Desktop (C++)   → native shell that can reuse or start a backend and load either:
+                  - Vite dev server in development
+                  - built frontend files in production
+                  - native SQLite-backed desktop config from disk
 ```
 
 ---
@@ -101,24 +103,45 @@ cmake --build build
 ./build/en-learner
 ```
 
-The shell will find and launch the backend, wait for it, then open the webview.
+In development the shell opens the Vite frontend and injects the backend API URL at runtime.
 
 ---
 
 ## Building for production
 
 ```bash
-# 1. Build frontend
 npm run build:frontend
-
-# 2. Build backend
 npm run build:backend
-
-# 3. Build desktop shell
 npm run build:desktop
 ```
 
-To serve built frontend files from the backend, copy `apps/frontend/dist/` next to the backend binary and enable the static file middleware (see `apps/backend/src/main.rs` — add `tower_http::services::ServeDir`).
+Each artifact can be shipped separately:
+
+- Backend: `apps/backend/target/release/en-learner-backend`
+- Frontend: `apps/frontend/dist/`
+- Desktop: `apps/desktop/build/en-learner`
+
+Production desktop defaults to the local frontend build and a local backend API:
+
+```bash
+./apps/desktop/build/en-learner
+```
+
+You can override that wiring explicitly:
+
+```bash
+EN_LEARNER_FRONTEND_URL=https://frontend.example.com \
+EN_LEARNER_BACKEND_URL=https://api.example.com \
+EN_LEARNER_SPAWN_BACKEND=false \
+EN_LEARNER_PUBLIC_APP_URL=https://frontend.example.com \
+./apps/desktop/build/en-learner
+```
+
+If you want the backend to serve the frontend as a convenience deployment mode, enable it explicitly:
+
+```bash
+SERVE_FRONTEND=true FRONTEND_DIST_DIR=./apps/frontend/dist cargo run --manifest-path apps/backend/Cargo.toml
+```
 
 ---
 
@@ -138,6 +161,8 @@ To serve built frontend files from the backend, copy `apps/frontend/dist/` next 
 ## Backend API reference
 
 Base URL: `http://127.0.0.1:3001/api`
+
+Health check: `GET /health`
 
 ### Words
 | Method | Path | Description |
@@ -169,6 +194,8 @@ Base URL: `http://127.0.0.1:3001/api`
 | GET | `/review/session?set_id=&limit=` | Start review session |
 | POST | `/review/submit` | Submit review rating |
 | GET | `/review/session/:id/summary` | Session summary |
+| POST | `/sets/:id/share-test` | Create or reuse a public test link for a set |
+| GET | `/public/tests/:token` | Fetch the public flashcard deck behind a shared link |
 
 ### Other
 | Method | Path | Description |
@@ -188,6 +215,10 @@ SQLite at `~/.local/share/en-learner/data.db` (Linux/macOS).
 Override with `DATABASE_URL=sqlite:/path/to/db`.
 
 Migrations run automatically on startup via `rusqlite_migration`.
+
+Desktop shell settings use a separate native SQLite file:
+- Linux/macOS default: `~/.local/share/en-learner/desktop.db`
+- Override with `EN_LEARNER_NATIVE_DB_PATH=/path/to/desktop.db`
 
 **Schema summary:**
 - `words`, `phonetics`, `meanings`, `definitions` — dictionary data
@@ -236,8 +267,50 @@ Copy `.env.example` to `.env`:
 BACKEND_HOST=127.0.0.1
 BACKEND_PORT=3001
 VITE_API_BASE_URL=http://127.0.0.1:3001
+VITE_PUBLIC_APP_URL=https://app.example.com
+SERVE_FRONTEND=false
 RUST_LOG=info
 ```
+
+### Backend
+
+- `BACKEND_HOST` or `HOST`: bind host
+- `BACKEND_PORT` or `PORT`: bind port
+- `DATABASE_URL`: optional SQLite override
+- `SERVE_FRONTEND`: opt-in static frontend hosting
+- `FRONTEND_DIST_DIR`: dist path used when `SERVE_FRONTEND=true`
+- `GET /health`: simple health endpoint for Render or other public platforms
+
+### Frontend
+
+- `VITE_API_BASE_URL`: build-time fallback for API requests
+- `VITE_PUBLIC_APP_URL`: public frontend base used when generating shareable public test links
+- `window.__EN_LEARNER_RUNTIME_CONFIG.apiBaseUrl`: runtime override for desktop or external hosting
+
+The frontend uses hash-based routing, so the built SPA can be opened from static hosting or directly from local files without server-side route rewrites.
+
+### Desktop
+
+- `EN_LEARNER_FRONTEND_URL`: explicit frontend URL
+- `EN_LEARNER_FRONTEND_DIST_DIR`: override local built frontend path
+- `EN_LEARNER_BACKEND_URL`: explicit API base URL injected into the frontend
+- `EN_LEARNER_PUBLIC_APP_URL`: override the copied public test-link base in desktop builds
+- If `EN_LEARNER_BACKEND_URL` is unset, the desktop shell derives the local API URL from `BACKEND_HOST`/`HOST` and `BACKEND_PORT`/`PORT`
+- `EN_LEARNER_SPAWN_BACKEND`: `true` or `false`
+- `EN_LEARNER_BACKEND_EXE`: explicit backend binary path
+- `EN_LEARNER_NATIVE_DB_PATH`: explicit path for the desktop shell SQLite config file
+
+### Public backend deploy
+
+```bash
+BACKEND_HOST=0.0.0.0 PORT=3001 cargo run --manifest-path apps/backend/Cargo.toml
+```
+
+### Public test links
+
+- Generate them from a set with the `Copy test link` action
+- Web route format: `/#/public/tests/:token`
+- API route format: `/api/public/tests/:token`
 
 ---
 
