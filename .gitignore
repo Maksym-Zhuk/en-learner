@@ -1,0 +1,37 @@
+# Node
+node_modules/
+.turbo/
+dist/
+.cache/
+
+# Rust
+apps/backend/target/
+
+# Desktop build
+apps/desktop/build/
+apps/desktop/include/webview/
+
+# Environment
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.claude/
+.codex
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SQLite databases (dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,56 @@
+use crate::AppState;
+use axum::{
+    routing::{delete, get, post},
+    Router,
+};
+
+pub mod dashboard;
+pub mod history;
+pub mod review;
+pub mod sets;
+pub mod settings;
+pub mod words;
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        // Words / search
+        .route("/words/search", get(words::search))
+        .route("/words/saved", get(words::list_saved))
+        .route("/words/:id", get(words::get_word))
+        .route("/words/:id/save", post(words::save_word))
+        .route("/words/:id/save", delete(words::unsave_word))
+        .route("/words/:id/favorite", post(words::favorite_word))
+        .route("/words/:id/favorite", delete(words::unfavorite_word))
+        // Study sets
+        .route("/sets", get(sets::list_sets).post(sets::create_set))
+        .route(
+            "/sets/:id",
+            get(sets::get_set)
+                .put(sets::update_set)
+                .delete(sets::delete_set),
+        )
+        .route(
+            "/sets/:id/words",
+            get(sets::list_set_words).post(sets::add_word_to_set),
+        )
+        .route(
+            "/sets/:id/words/:word_id",
+            delete(sets::remove_word_from_set),
+        )
+        // Favorites
+        .route("/favorites", get(words::list_favorites))
+        // Review
+        .route("/review/session", get(review::start_session))
+        .route("/review/submit", post(review::submit_review))
+        .route("/review/session/:id/summary", get(review::session_summary))
+        // Dashboard
+        .route("/dashboard/stats", get(dashboard::stats))
+        // History
+        .route("/history", get(history::list_history))
+        .route("/history", post(history::record_search))
+        // Settings
+        .route(
+            "/settings",
+            get(settings::get_settings).put(settings::update_settings),
+        )
+}

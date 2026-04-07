@@ -1,0 +1,35 @@
+{
+  "name": "en-learner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "English vocabulary learning desktop application",
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:frontend": "turbo run dev --filter=frontend",
+    "dev:backend": "turbo run dev --filter=backend",
+    "build": "turbo run build",
+    "build:frontend": "turbo run build --filter=frontend",
+    "build:backend": "cd apps/backend && cargo build --release",
+    "build:desktop": "cd apps/desktop && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "backend:dev": "cd apps/backend && cargo run",
+    "backend:test": "cd apps/backend && cargo test",
+    "desktop:build": "npm run build:desktop",
+    "setup": "npm install && cd apps/desktop && bash scripts/download_deps.sh"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.9.2"
+}
