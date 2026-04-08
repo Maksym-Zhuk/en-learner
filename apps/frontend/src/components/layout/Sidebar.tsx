@@ -1,23 +1,17 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
   Brain,
   History,
   Layers,
   LayoutDashboard,
-  Moon,
   Search,
   Settings,
   Sparkles,
-  Sun,
   X,
 } from "lucide-react";
-import toast from "react-hot-toast";
 import { cn } from "@/components/ui/utils";
-import { settingsApi } from "@/api/settings";
 import { useAppStore } from "@/store";
-import type { AppSettings } from "@/types";
 
 const navSections = [
   {
@@ -76,42 +70,8 @@ export default function Sidebar({
   mobileOpen = false,
   onClose,
 }: SidebarProps) {
-  const qc = useQueryClient();
   const navigate = useNavigate();
-  const darkMode = useAppStore((s) => s.darkMode);
-  const setDarkMode = useAppStore((s) => s.setDarkMode);
   const lastSearchQuery = useAppStore((s) => s.lastSearchQuery);
-
-  const themeMutation = useMutation({
-    mutationFn: settingsApi.update,
-    onMutate: async (patch) => {
-      await qc.cancelQueries({ queryKey: ["settings"] });
-      const previous = qc.getQueryData<AppSettings>(["settings"]);
-
-      if (previous) {
-        qc.setQueryData<AppSettings>(["settings"], { ...previous, ...patch });
-      }
-
-      return {
-        previous,
-        optimisticDarkMode: patch.dark_mode,
-      };
-    },
-    onError: (_error, _patch, context) => {
-      if (context?.previous) {
-        qc.setQueryData(["settings"], context.previous);
-        setDarkMode(context.previous.dark_mode);
-      } else if (typeof context?.optimisticDarkMode === "boolean") {
-        setDarkMode(!context.optimisticDarkMode);
-      }
-
-      toast.error("Failed to update theme");
-    },
-    onSuccess: (data) => {
-      qc.setQueryData(["settings"], data);
-      setDarkMode(data.dark_mode);
-    },
-  });
 
   const openSearch = () => {
     onClose?.();
@@ -124,16 +84,10 @@ export default function Sidebar({
     navigate("/search");
   };
 
-  const toggleTheme = () => {
-    const nextMode = !darkMode;
-    setDarkMode(nextMode);
-    themeMutation.mutate({ dark_mode: nextMode });
-  };
-
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 flex w-80 max-w-[88vw] flex-col border-r border-white/50 bg-white/95 backdrop-blur transition-transform dark:border-white/10 dark:bg-gray-950/95 lg:static lg:w-72 lg:max-w-none lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 flex w-80 max-w-[88vw] flex-col overflow-y-auto border-r border-white/50 bg-white/95 backdrop-blur transition-transform dark:border-white/10 dark:bg-gray-950/95 lg:static lg:w-72 lg:max-w-none lg:translate-x-0",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
@@ -198,7 +152,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+      <nav className="space-y-6 px-3 py-4">
         {navSections.map((section) => (
           <div key={section.title} className="space-y-2">
             <div className="px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500">
@@ -248,7 +202,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      <div className="border-t border-gray-200/80 p-3 dark:border-gray-800/80">
+      <div className="mt-auto border-t border-gray-200/80 p-3 dark:border-gray-800/80">
         <NavLink
           to="/settings"
           onClick={onClose}
@@ -271,23 +225,6 @@ export default function Sidebar({
             </div>
           </div>
         </NavLink>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          disabled={themeMutation.isPending}
-          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100/80 disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-900"
-        >
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </div>
-          <div>
-            <div className="font-semibold">{darkMode ? "Light mode" : "Dark mode"}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Stored in settings and applied globally.
-            </div>
-          </div>
-        </button>
       </div>
     </aside>
   );

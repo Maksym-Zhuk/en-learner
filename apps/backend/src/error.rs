@@ -16,6 +16,12 @@ pub enum AppError {
     #[error("Bad request: {0}")]
     BadRequest(String),
 
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
+
+    #[error("Conflict: {0}")]
+    Conflict(String),
+
     #[error("External API error: {0}")]
     ExternalApi(String),
 
@@ -46,6 +52,8 @@ impl IntoResponse for AppError {
         let (status, code, message) = match &self {
             AppError::NotFound(msg) => (StatusCode::NOT_FOUND, "NOT_FOUND", msg.clone()),
             AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, "BAD_REQUEST", msg.clone()),
+            AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", msg.clone()),
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, "CONFLICT", msg.clone()),
             AppError::ExternalApi(msg) => {
                 (StatusCode::BAD_GATEWAY, "EXTERNAL_API_ERROR", msg.clone())
             }

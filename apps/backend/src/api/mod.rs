@@ -5,6 +5,7 @@ use axum::{
     Router,
 };
 
+pub mod auth;
 pub mod dashboard;
 pub mod history;
 pub mod review;
@@ -15,6 +16,14 @@ pub mod words;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/health", get(health))
+        .route("/auth/providers", get(auth::list_providers))
+        .route("/auth/register", post(auth::register))
+        .route("/auth/login", post(auth::login))
+        .route("/auth/logout", post(auth::logout))
+        .route("/auth/me", get(auth::me))
+        .route("/auth/oauth/:provider/start", post(auth::start_oauth))
+        .route("/auth/oauth/:provider/callback", get(auth::complete_oauth))
+        .route("/auth/oauth/status/:state", get(auth::oauth_status))
         // Words / search
         .route("/words/search", get(words::search))
         .route("/words/saved", get(words::list_saved))

@@ -18,6 +18,17 @@ export type {
   SessionSummary,
   PublicTestLink,
   PublicTestDeck,
+  ConnectivityMode,
+  AuthMode,
+  AuthUser,
+  AuthSession,
+  AuthProviderId,
+  AuthProvider,
+  AuthProvidersResponse,
+  OAuthStartResponse,
+  OAuthStatusResponse,
+  RegisterRequest,
+  LoginRequest,
   DashboardStats,
   HardWord,
   WordsByState,
@@ -28,7 +39,6 @@ export type {
   CreateSetRequest,
   UpdateSetRequest,
   SaveWordRequest,
-  AddToSetRequest,
 } from "@en-learner/shared";
 
 // Frontend-only types

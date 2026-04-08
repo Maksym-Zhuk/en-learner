@@ -54,6 +54,7 @@ pub fn run_migrations(pool: &Pool) -> anyhow::Result<()> {
         M::up(include_str!("migrations/003_stats.sql")),
         M::up(include_str!("migrations/004_review_log_sessions.sql")),
         M::up(include_str!("migrations/005_public_test_links.sql")),
+        M::up(include_str!("migrations/006_auth.sql")),
     ]);
 
     let mut conn = pool.get()?;

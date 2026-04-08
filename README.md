@@ -27,8 +27,13 @@ Frontend (React) → standalone SPA with configurable API base URL
 Desktop (C++)   → native shell that can reuse or start a backend and load either:
                   - Vite dev server in development
                   - built frontend files in production
-                  - native SQLite-backed desktop config from disk
+                  - native SQLite-backed desktop config/auth/runtime state from disk
 ```
+
+**Offline / online split:**
+- C++ owns on-device runtime state: backend target, connectivity mode, guest mode, and cached remote session.
+- Rust is the remote boundary: internet-backed dictionary/translation calls, shared public test links, and remote account auth.
+- Frontend can talk to both: native bridge for local desktop capabilities, Rust API for remote features.
 
 ---
 
@@ -206,6 +211,18 @@ Health check: `GET /health`
 | GET | `/settings` | App settings |
 | PUT | `/settings` | Update settings |
 
+### Auth
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/auth/providers` | List configured remote auth providers |
+| POST | `/auth/register` | Create a remote account with email/password |
+| POST | `/auth/login` | Sign in with email/password |
+| POST | `/auth/logout` | Revoke the current remote session |
+| GET | `/auth/me` | Inspect the current remote session |
+| POST | `/auth/oauth/:provider/start` | Start Google/GitHub/Microsoft/Discord auth |
+| GET | `/auth/oauth/:provider/callback` | Provider callback endpoint |
+| GET | `/auth/oauth/status/:state` | Poll OAuth completion state from frontend/desktop |
+
 ---
 
 ## Database
@@ -219,6 +236,12 @@ Migrations run automatically on startup via `rusqlite_migration`.
 Desktop shell settings use a separate native SQLite file:
 - Linux/macOS default: `~/.local/share/en-learner/desktop.db`
 - Override with `EN_LEARNER_NATIVE_DB_PATH=/path/to/desktop.db`
+
+Desktop SQLite persists:
+- desktop backend URL override
+- connectivity mode (`auto` / `offline` / `online`)
+- guest profile name
+- cached remote auth session
 
 **Schema summary:**
 - `words`, `phonetics`, `meanings`, `definitions` — dictionary data
@@ -256,6 +279,14 @@ Implementation: `apps/backend/src/services/review_engine.rs`
 Both are wrapped behind Rust services. The frontend never calls them directly. Responses are cached locally after first fetch.
 
 The translator uses a `TranslatorProvider` trait — swap `LingvaTranslator` for any alternative (LibreTranslate, MyMemory, etc.) without changing the API layer.
+
+Remote auth providers are enabled only when their server-side credentials are configured. Current built-in providers:
+- Email/password
+- Google OAuth
+- GitHub OAuth
+- Microsoft OAuth
+- Discord OAuth
+- Apple is listed as a server-side placeholder but not enabled in this build yet
 
 ---
 

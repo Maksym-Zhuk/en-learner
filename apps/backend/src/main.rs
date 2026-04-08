@@ -27,6 +27,9 @@ pub struct Config {
     pub port: u16,
     pub dictionary_api_url: String,
     pub lingva_api_url: String,
+    pub public_backend_url: Option<String>,
+    pub public_app_url: Option<String>,
+    pub auth_session_ttl_hours: i64,
     pub serve_frontend: bool,
     pub frontend_dist_dir: Option<PathBuf>,
 }
@@ -48,6 +51,16 @@ impl Config {
                 .unwrap_or_else(|_| "https://api.dictionaryapi.dev/api/v2/entries/en".into()),
             lingva_api_url: std::env::var("LINGVA_API_URL")
                 .unwrap_or_else(|_| "https://lingva.ml/api/v1".into()),
+            public_backend_url: std::env::var("PUBLIC_BACKEND_URL")
+                .or_else(|_| std::env::var("EN_LEARNER_PUBLIC_BACKEND_URL"))
+                .ok(),
+            public_app_url: std::env::var("PUBLIC_APP_URL")
+                .or_else(|_| std::env::var("EN_LEARNER_PUBLIC_APP_URL"))
+                .ok(),
+            auth_session_ttl_hours: std::env::var("AUTH_SESSION_TTL_HOURS")
+                .ok()
+                .and_then(|value| value.parse().ok())
+                .unwrap_or(24 * 30),
             serve_frontend: env_flag("SERVE_FRONTEND") || frontend_dist_dir.is_some(),
             frontend_dist_dir,
         }

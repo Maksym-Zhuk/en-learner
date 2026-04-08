@@ -33,6 +33,7 @@
 #include <vector>
 
 #ifdef _WIN32
+  #include <shellapi.h>
   #include <windows.h>
   #include <winsock2.h>
   #pragma comment(lib, "Ws2_32.lib")
@@ -172,6 +173,10 @@ struct DesktopRuntimeContext {
     std::string backend_url;
     std::string frontend_url;
     std::string storage_path;
+    std::string connectivity_mode = "auto";
+    std::string auth_mode = "none";
+    std::optional<std::string> auth_session_json;
+    std::string local_profile_name = "Local user";
     std::optional<std::string> persisted_backend_url;
     bool owns_backend = false;
     bool production_build = IS_PRODUCTION;
@@ -428,6 +433,42 @@ std::string json_optional_string(const std::optional<std::string>& value) {
     return webview::detail::json_escape(*value);
 }
 
+bool is_valid_connectivity_mode(const std::string& value) {
+    return value == "auto" || value == "offline" || value == "online";
+}
+
+bool is_valid_auth_mode(const std::string& value) {
+    return value == "none" || value == "guest" || value == "remote";
+}
+
+void open_external_url(const std::string& url) {
+    if (!(starts_with(url, "http://") || starts_with(url, "https://"))) {
+        throw std::runtime_error("External URLs must start with http:// or https://");
+    }
+
+#ifdef _WIN32
+    HINSTANCE result = ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    auto code = reinterpret_cast<std::intptr_t>(result);
+    if (code <= 32) {
+        throw std::runtime_error("Failed to open the system browser");
+    }
+#else
+    pid_t pid = fork();
+    if (pid < 0) {
+        throw std::runtime_error("Failed to fork the browser launcher");
+    }
+
+    if (pid == 0) {
+#ifdef __APPLE__
+        execlp("open", "open", url.c_str(), nullptr);
+#else
+        execlp("xdg-open", "xdg-open", url.c_str(), nullptr);
+#endif
+        _exit(1);
+    }
+#endif
+}
+
 std::filesystem::path resolve_desktop_data_dir() {
     namespace fs = std::filesystem;
 
@@ -620,6 +661,10 @@ std::string build_runtime_info_json(const DesktopRuntimeContext& context) {
     std::string backend_url;
     std::string frontend_url;
     std::string storage_path;
+    std::string connectivity_mode;
+    std::string auth_mode;
+    std::string local_profile_name;
+    std::optional<std::string> auth_session_json;
     std::optional<std::string> persisted_backend_url;
     bool owns_backend = false;
     bool production_build = false;
@@ -629,6 +674,10 @@ std::string build_runtime_info_json(const DesktopRuntimeContext& context) {
         backend_url = context.backend_url;
         frontend_url = context.frontend_url;
         storage_path = context.storage_path;
+        connectivity_mode = context.connectivity_mode;
+        auth_mode = context.auth_mode;
+        auth_session_json = context.auth_session_json;
+        local_profile_name = context.local_profile_name;
         persisted_backend_url = context.persisted_backend_url;
         owns_backend = context.owns_backend;
         production_build = context.production_build;
@@ -649,6 +698,10 @@ std::string build_runtime_info_json(const DesktopRuntimeContext& context) {
          << "\"backendUrl\":" << webview::detail::json_escape(backend_url) << ","
          << "\"frontendUrl\":" << webview::detail::json_escape(frontend_url) << ","
          << "\"storagePath\":" << webview::detail::json_escape(storage_path) << ","
+         << "\"connectivityMode\":" << webview::detail::json_escape(connectivity_mode) << ","
+         << "\"authMode\":" << webview::detail::json_escape(auth_mode) << ","
+         << "\"authSessionJson\":" << json_optional_string(auth_session_json) << ","
+         << "\"localProfileName\":" << webview::detail::json_escape(local_profile_name) << ","
          << "\"persistedBackendUrl\":" << json_optional_string(persisted_backend_url) << ","
          << "\"managesBackend\":" << json_bool(owns_backend) << ","
          << "\"productionBuild\":" << json_bool(production_build) << ","
@@ -1280,6 +1333,132 @@ void bind_native_bridge(
         },
         nullptr
     );
+
+    view.bind(
+        "enLearnerNativeSetConnectivityMode",
+        [context](std::string id, std::string req, void* /*arg*/) {
+            const std::string requested_mode = webview::detail::json_parse(req, "", 0);
+
+            queue_native_worker(context, [context, id, requested_mode]() {
+                try {
+                    if (!is_valid_connectivity_mode(requested_mode)) {
+                        throw std::runtime_error("Connectivity mode must be auto, offline, or online");
+                    }
+
+                    save_desktop_setting(context->storage, "connectivity_mode", requested_mode);
+
+                    {
+                        std::lock_guard<std::mutex> lock(context->state_mutex);
+                        context->connectivity_mode = requested_mode;
+                    }
+
+                    resolve_native_call(context, id, 0, build_runtime_info_json(*context));
+                } catch (const std::exception& e) {
+                    resolve_native_call(context, id, 1, json_error_message(e.what()));
+                }
+            });
+        },
+        nullptr
+    );
+
+    view.bind(
+        "enLearnerNativeSignInGuest",
+        [context](std::string id, std::string req, void* /*arg*/) {
+            const std::string requested_name = webview::detail::json_parse(req, "", 0);
+
+            queue_native_worker(context, [context, id, requested_name]() {
+                try {
+                    const std::string profile_name =
+                        requested_name.empty() ? std::string("Local user") : requested_name;
+
+                    save_desktop_setting(context->storage, "auth_mode", std::string("guest"));
+                    save_desktop_setting(context->storage, "auth_session_json", std::nullopt);
+                    save_desktop_setting(context->storage, "local_profile_name", profile_name);
+
+                    {
+                        std::lock_guard<std::mutex> lock(context->state_mutex);
+                        context->auth_mode = "guest";
+                        context->auth_session_json = std::nullopt;
+                        context->local_profile_name = profile_name;
+                    }
+
+                    resolve_native_call(context, id, 0, build_runtime_info_json(*context));
+                } catch (const std::exception& e) {
+                    resolve_native_call(context, id, 1, json_error_message(e.what()));
+                }
+            });
+        },
+        nullptr
+    );
+
+    view.bind(
+        "enLearnerNativeSetAuthSession",
+        [context](std::string id, std::string req, void* /*arg*/) {
+            const std::string auth_session_json = webview::detail::json_parse(req, "", 0);
+
+            queue_native_worker(context, [context, id, auth_session_json]() {
+                try {
+                    if (auth_session_json.empty()) {
+                        throw std::runtime_error("Auth session payload is required");
+                    }
+
+                    save_desktop_setting(context->storage, "auth_mode", std::string("remote"));
+                    save_desktop_setting(context->storage, "auth_session_json", auth_session_json);
+
+                    {
+                        std::lock_guard<std::mutex> lock(context->state_mutex);
+                        context->auth_mode = "remote";
+                        context->auth_session_json = auth_session_json;
+                    }
+
+                    resolve_native_call(context, id, 0, build_runtime_info_json(*context));
+                } catch (const std::exception& e) {
+                    resolve_native_call(context, id, 1, json_error_message(e.what()));
+                }
+            });
+        },
+        nullptr
+    );
+
+    view.bind(
+        "enLearnerNativeClearAuthSession",
+        [context](std::string id, std::string /*req*/, void* /*arg*/) {
+            queue_native_worker(context, [context, id]() {
+                try {
+                    save_desktop_setting(context->storage, "auth_mode", std::string("none"));
+                    save_desktop_setting(context->storage, "auth_session_json", std::nullopt);
+
+                    {
+                        std::lock_guard<std::mutex> lock(context->state_mutex);
+                        context->auth_mode = "none";
+                        context->auth_session_json = std::nullopt;
+                    }
+
+                    resolve_native_call(context, id, 0, build_runtime_info_json(*context));
+                } catch (const std::exception& e) {
+                    resolve_native_call(context, id, 1, json_error_message(e.what()));
+                }
+            });
+        },
+        nullptr
+    );
+
+    view.bind(
+        "enLearnerNativeOpenExternalUrl",
+        [context](std::string id, std::string req, void* /*arg*/) {
+            const std::string url = webview::detail::json_parse(req, "", 0);
+
+            queue_native_worker(context, [context, id, url]() {
+                try {
+                    open_external_url(url);
+                    resolve_native_call(context, id, 0, "{\"ok\":true}");
+                } catch (const std::exception& e) {
+                    resolve_native_call(context, id, 1, json_error_message(e.what()));
+                }
+            });
+        },
+        nullptr
+    );
 }
 
 // ---- Main ----------------------------------------------------------------
@@ -1299,6 +1478,29 @@ int main() {
         runtime_context->storage = desktop_storage;
         runtime_context->storage_path = desktop_storage->db_path.string();
         runtime_context->persisted_backend_url = load_desktop_setting(desktop_storage, "backend_url");
+        if (auto stored_connectivity_mode = load_desktop_setting(desktop_storage, "connectivity_mode")) {
+            if (is_valid_connectivity_mode(*stored_connectivity_mode)) {
+                runtime_context->connectivity_mode = *stored_connectivity_mode;
+            }
+        }
+        if (auto stored_auth_mode = load_desktop_setting(desktop_storage, "auth_mode")) {
+            if (is_valid_auth_mode(*stored_auth_mode)) {
+                runtime_context->auth_mode = *stored_auth_mode;
+            }
+        }
+        runtime_context->auth_session_json = load_desktop_setting(desktop_storage, "auth_session_json");
+        if (auto stored_local_profile_name = load_desktop_setting(desktop_storage, "local_profile_name")) {
+            if (!stored_local_profile_name->empty()) {
+                runtime_context->local_profile_name = *stored_local_profile_name;
+            }
+        }
+
+        if (runtime_context->auth_mode == "remote" && !runtime_context->auth_session_json.has_value()) {
+            runtime_context->auth_mode = "none";
+        }
+        if (runtime_context->auth_mode != "remote") {
+            runtime_context->auth_session_json = std::nullopt;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;

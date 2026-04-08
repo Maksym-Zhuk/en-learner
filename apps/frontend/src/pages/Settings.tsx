@@ -211,20 +211,19 @@ export default function Settings() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Appearance
+                Interface
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Set the tone for the workspace and base interface behavior.
+                Quick appearance controls live in the top bar, while the rest stays here.
               </p>
             </div>
           </div>
 
-          <Toggle
-            label="Dark mode"
-            description="Switch between light and dark surfaces across the app shell."
-            checked={darkMode}
-            disabled={updateMutation.isPending}
-            onChange={(value) => update({ dark_mode: value })}
+          <ReadonlySetting
+            icon={<SettingsIcon className="h-4 w-4" />}
+            label="Theme switch"
+            description="Use the small sun/moon toggle in the header to change the theme without opening settings."
+            value={darkMode ? "Dark" : "Light"}
           />
 
           <ReadonlySetting

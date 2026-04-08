@@ -139,6 +139,72 @@ export interface PublicTestDeck {
   total: number;
 }
 
+// --- Auth / Connectivity ---
+
+export type ConnectivityMode = "auto" | "offline" | "online";
+export type AuthMode = "none" | "guest" | "remote";
+export type AuthProviderId =
+  | "password"
+  | "google"
+  | "github"
+  | "microsoft"
+  | "discord"
+  | "apple";
+
+export interface AuthUser {
+  id: string;
+  email: string | null;
+  display_name: string;
+  provider: string;
+  created_at: string;
+}
+
+export interface AuthSession {
+  token: string;
+  user: AuthUser;
+  expires_at: string;
+}
+
+export interface AuthProvider {
+  id: AuthProviderId;
+  label: string;
+  kind: "password" | "oauth";
+  available: boolean;
+  requires_external_browser: boolean;
+  start_path: string | null;
+  description: string;
+}
+
+export interface AuthProvidersResponse {
+  providers: AuthProvider[];
+}
+
+export interface OAuthStartResponse {
+  provider: AuthProviderId;
+  state: string;
+  authorization_url: string;
+  poll_path: string;
+  expires_at: string;
+  requires_external_browser: boolean;
+}
+
+export interface OAuthStatusResponse {
+  status: "pending" | "complete" | "failed";
+  session: AuthSession | null;
+  error: string | null;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  display_name: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 // --- Dashboard ---
 
 export interface DashboardStats {

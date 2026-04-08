@@ -7,6 +7,10 @@ declare global {
     backendUrl: string;
     frontendUrl: string;
     storagePath: string;
+    connectivityMode: "auto" | "offline" | "online";
+    authMode: "none" | "guest" | "remote";
+    authSessionJson: string | null;
+    localProfileName: string;
     persistedBackendUrl: string | null;
     managesBackend: boolean;
     productionBuild: boolean;
@@ -37,5 +41,16 @@ declare global {
     enLearnerNativeSetBackendUrl?: (
       backendUrl: string
     ) => Promise<EnLearnerNativeRuntimeInfo>;
+    enLearnerNativeSetConnectivityMode?: (
+      mode: "auto" | "offline" | "online"
+    ) => Promise<EnLearnerNativeRuntimeInfo>;
+    enLearnerNativeSignInGuest?: (
+      displayName?: string
+    ) => Promise<EnLearnerNativeRuntimeInfo>;
+    enLearnerNativeSetAuthSession?: (
+      sessionJson: string
+    ) => Promise<EnLearnerNativeRuntimeInfo>;
+    enLearnerNativeClearAuthSession?: () => Promise<EnLearnerNativeRuntimeInfo>;
+    enLearnerNativeOpenExternalUrl?: (url: string) => Promise<{ ok: boolean }>;
   }
 }

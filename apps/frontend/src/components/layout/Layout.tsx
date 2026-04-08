@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Search, Sparkles } from "lucide-react";
+import { Menu, Moon, Search, ShieldCheck, Sparkles, Sun, UserRound } from "lucide-react";
+import toast from "react-hot-toast";
 import Sidebar from "./Sidebar";
 import { Button } from "@/components/ui";
+import { settingsApi } from "@/api/settings";
 import { nativeDesktopApi } from "@/native/desktop";
+import { useAppStore } from "@/store";
+import type { AppSettings } from "@/types";
 
 function getPageMeta(pathname: string) {
   if (pathname.startsWith("/dashboard")) {
@@ -55,6 +60,13 @@ function getPageMeta(pathname: string) {
     };
   }
 
+  if (pathname.startsWith("/auth")) {
+    return {
+      title: "Account",
+      description: "Switch between local guest mode and remote sign-in providers.",
+    };
+  }
+
   if (pathname.startsWith("/settings")) {
     return {
       title: "Settings",
@@ -71,8 +83,57 @@ function getPageMeta(pathname: string) {
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const darkMode = useAppStore((s) => s.darkMode);
+  const setDarkMode = useAppStore((s) => s.setDarkMode);
+  const authMode = useAppStore((s) => s.authMode);
+  const authSession = useAppStore((s) => s.authSession);
+  const localProfileName = useAppStore((s) => s.localProfileName);
   const pageMeta = getPageMeta(location.pathname);
+  const showHeaderShortcuts = !location.pathname.startsWith("/dashboard");
+
+  const authLabel = useMemo(() => {
+    if (authMode === "remote" && authSession) {
+      return authSession.user.display_name;
+    }
+
+    if (authMode === "guest") {
+      return localProfileName;
+    }
+
+    return "Sign in";
+  }, [authMode, authSession, localProfileName]);
+
+  const themeMutation = useMutation({
+    mutationFn: settingsApi.update,
+    onMutate: async (patch: Partial<AppSettings>) => {
+      await qc.cancelQueries({ queryKey: ["settings"] });
+      const previous = qc.getQueryData<AppSettings>(["settings"]);
+
+      if (previous) {
+        qc.setQueryData<AppSettings>(["settings"], { ...previous, ...patch });
+      }
+
+      if (typeof patch.dark_mode === "boolean") {
+        setDarkMode(patch.dark_mode);
+      }
+
+      return { previous };
+    },
+    onError: (_error, _patch, context) => {
+      if (context?.previous) {
+        qc.setQueryData(["settings"], context.previous);
+        setDarkMode(context.previous.dark_mode);
+      }
+
+      toast.error("Failed to update theme");
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(["settings"], data);
+      setDarkMode(data.dark_mode);
+    },
+  });
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -83,6 +144,14 @@ export default function Layout() {
     document.title = windowTitle;
     void nativeDesktopApi.setWindowTitle(windowTitle).catch(() => {});
   }, [pageMeta.title]);
+
+  const toggleTheme = () => {
+    if (themeMutation.isPending) {
+      return;
+    }
+
+    themeMutation.mutate({ dark_mode: !darkMode });
+  };
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -123,20 +192,48 @@ export default function Layout() {
               </div>
             </div>
 
-            <div className="hidden items-center gap-2 sm:flex">
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                size="sm"
-                className="hidden md:inline-flex"
-                onClick={() => navigate("/search")}
+                size="icon"
+                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                onClick={toggleTheme}
+                disabled={themeMutation.isPending}
               >
-                <Search className="h-4 w-4" />
-                Search
+                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              <Button size="sm" onClick={() => navigate("/review")}>
-                <Sparkles className="h-4 w-4" />
-                Study now
+
+              <Button
+                variant={authMode === "none" ? "secondary" : "soft"}
+                size="sm"
+                onClick={() => navigate("/auth")}
+                className="max-w-[180px]"
+              >
+                {authMode === "none" ? (
+                  <ShieldCheck className="h-4 w-4" />
+                ) : (
+                  <UserRound className="h-4 w-4" />
+                )}
+                <span className="truncate">{authLabel}</span>
               </Button>
+
+              {showHeaderShortcuts ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="hidden md:inline-flex"
+                    onClick={() => navigate("/search")}
+                  >
+                    <Search className="h-4 w-4" />
+                    Search
+                  </Button>
+                  <Button size="sm" onClick={() => navigate("/review")}>
+                    <Sparkles className="h-4 w-4" />
+                    Study now
+                  </Button>
+                </>
+              ) : null}
             </div>
           </div>
         </header>

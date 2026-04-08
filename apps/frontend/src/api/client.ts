@@ -1,8 +1,10 @@
+import { useAppStore } from "@/store";
+
 function normalizeBaseUrl(value: string | undefined): string {
   return (value ?? "").trim().replace(/\/+$/, "");
 }
 
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   return normalizeBaseUrl(
     window.__EN_LEARNER_RUNTIME_CONFIG?.apiBaseUrl ??
       import.meta.env.VITE_API_BASE_URL
@@ -25,9 +27,11 @@ async function request<T>(
   options?: RequestInit
 ): Promise<T> {
   const url = `${getBaseUrl()}/api${path}`;
+  const session = useAppStore.getState().authSession;
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
+      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
       ...options?.headers,
     },
     ...options,
