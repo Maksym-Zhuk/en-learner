@@ -24,16 +24,18 @@ en-learner/
 ```
 Backend (Rust)  → standalone API service, deployable publicly on Postgres
 Frontend (React) → standalone SPA with configurable API base URL
-Desktop (C++)   → native shell that can reuse or start a backend and load either:
+Desktop (C++)   → native shell that loads either:
                   - Vite dev server in development
                   - built frontend files in production
-                  - native SQLite-backed desktop config/auth/runtime state from disk
+                  - native SQLite-backed desktop runtime state from disk
+                  - optional remote backend URL for cloud-only features
 ```
 
 **Offline / online split:**
 - C++ owns on-device runtime state and local SQLite storage on the user device.
-- Rust is the remote server boundary: internet-backed dictionary/translation calls, shared public test links, and remote account auth.
-- Frontend can talk to both: native bridge for local desktop capabilities, Rust API for online features.
+- Frontend owns the local-first study core in desktop mode: local search cache, saved words, sets, review queue, history, dashboard, and settings.
+- Rust is the remote server boundary only for shared public test links and remote account auth.
+- Frontend can talk to both: local desktop core for everyday study, Rust API only for online features.
 
 ---
 
@@ -65,7 +67,7 @@ sudo pacman -S webkit2gtk-4.1 cmake base-devel
 
 ---
 
-## Quick start (development)
+## Quick start (local desktop)
 
 ### 1. Install dependencies
 
@@ -81,58 +83,36 @@ npm install
 cd apps/desktop && bash scripts/download_deps.sh && cd ../..
 ```
 
-### 3. Run frontend + backend (hot reload)
+### 3. Run the desktop app with one command
 
-**Terminal 1 — Backend dependencies:**
+```bash
+npm run desktop:dev
+```
+
+What it does:
+- starts the Vite frontend dev server if it is not already running
+- builds the desktop shell
+- launches the native desktop app
+
+The local study flow does not require the Rust backend anymore.
+
+### 4. Optional: run cloud features locally
+
+Use this only if you want to test remote auth or shared public links.
+
 ```bash
 docker compose up -d postgres
-```
-
-**Terminal 2 — Backend:**
-```bash
 npm run backend:dev
-# or: cd apps/backend && cargo run
 ```
 
-**Terminal 2 — Frontend:**
-```bash
-npm run dev:frontend
-# or: cd apps/frontend && npm run dev
-```
-
-Frontend: http://localhost:5173  
-Backend API: http://localhost:3001
+Remote backend API: http://localhost:3001
 Postgres: `postgres://en_learner:en_learner@127.0.0.1:5432/en_learner`
-
-### Docker Compose
-
-```bash
-docker compose up -d postgres backend
-```
-
-This starts:
-- Postgres on `localhost:5432`
-- Rust backend on `localhost:3001`
-
-### 4. Run the desktop shell (optional)
-
-```bash
-# Build backend first in release or use dev binary
-cd apps/desktop
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
-./build/en-learner
-```
-
-In development the shell opens the Vite frontend and injects the backend API URL at runtime.
 
 ---
 
 ## Building for production
 
 ```bash
-npm run build:frontend
-npm run build:backend
 npm run build:desktop
 ```
 
@@ -142,26 +122,24 @@ Each artifact can be shipped separately:
 - Frontend: `apps/frontend/dist/`
 - Desktop: `apps/desktop/build/en-learner`
 
-Production desktop defaults to the local frontend build and a local backend API:
+Production desktop defaults to the local frontend build and fully local study mode:
 
 ```bash
-./apps/desktop/build/en-learner
+npm run desktop:start
 ```
 
-You can override that wiring explicitly:
+If you want cloud features, point the desktop app at a remote backend:
 
 ```bash
-EN_LEARNER_FRONTEND_URL=https://frontend.example.com \
 EN_LEARNER_BACKEND_URL=https://api.example.com \
-EN_LEARNER_SPAWN_BACKEND=false \
 EN_LEARNER_PUBLIC_APP_URL=https://frontend.example.com \
 ./apps/desktop/build/en-learner
 ```
 
-If you want the backend to serve the frontend as a convenience deployment mode, enable it explicitly:
+If you want to build the Rust backend separately:
 
 ```bash
-SERVE_FRONTEND=true FRONTEND_DIST_DIR=./apps/frontend/dist cargo run --manifest-path apps/backend/Cargo.toml
+npm run build:backend
 ```
 
 ---
@@ -174,6 +152,8 @@ SERVE_FRONTEND=true FRONTEND_DIST_DIR=./apps/frontend/dist cargo run --manifest-
 | `turbo build` | Builds all packages |
 | `turbo lint` | Lints all packages |
 | `turbo type-check` | TypeScript checks |
+| `npm run desktop:dev` | One-command local desktop development launch |
+| `npm run desktop:start` | Build frontend + desktop shell and run locally |
 | `npm run backend:test` | Run Rust tests |
 | `npm run backend:dev` | Cargo run (watch mode) |
 
