@@ -12,7 +12,7 @@ Combines a Cambridge Dictionary-style word lookup experience with Quizlet-style 
 en-learner/
 ├── apps/
 │   ├── frontend/        React + Vite + TailwindCSS + TanStack Query + Zustand
-│   ├── backend/         Rust + Axum + SQLite (rusqlite + r2d2)
+│   ├── backend/         Rust + Axum + Postgres (sqlx)
 │   └── desktop/         C++ + webview.h + CMake (native desktop shell)
 ├── packages/
 │   └── shared/          TypeScript types shared between frontend and backend API contract
@@ -22,7 +22,7 @@ en-learner/
 
 **Independent parts:**
 ```
-Backend (Rust)  → standalone API service, deployable publicly
+Backend (Rust)  → standalone API service, deployable publicly on Postgres
 Frontend (React) → standalone SPA with configurable API base URL
 Desktop (C++)   → native shell that can reuse or start a backend and load either:
                   - Vite dev server in development
@@ -31,9 +31,9 @@ Desktop (C++)   → native shell that can reuse or start a backend and load eith
 ```
 
 **Offline / online split:**
-- C++ owns on-device runtime state: backend target, connectivity mode, guest mode, and cached remote session.
-- Rust is the remote boundary: internet-backed dictionary/translation calls, shared public test links, and remote account auth.
-- Frontend can talk to both: native bridge for local desktop capabilities, Rust API for remote features.
+- C++ owns on-device runtime state and local SQLite storage on the user device.
+- Rust is the remote server boundary: internet-backed dictionary/translation calls, shared public test links, and remote account auth.
+- Frontend can talk to both: native bridge for local desktop capabilities, Rust API for online features.
 
 ---
 
@@ -83,7 +83,12 @@ cd apps/desktop && bash scripts/download_deps.sh && cd ../..
 
 ### 3. Run frontend + backend (hot reload)
 
-**Terminal 1 — Backend:**
+**Terminal 1 — Backend dependencies:**
+```bash
+docker compose up -d postgres
+```
+
+**Terminal 2 — Backend:**
 ```bash
 npm run backend:dev
 # or: cd apps/backend && cargo run
@@ -97,6 +102,17 @@ npm run dev:frontend
 
 Frontend: http://localhost:5173  
 Backend API: http://localhost:3001
+Postgres: `postgres://en_learner:en_learner@127.0.0.1:5432/en_learner`
+
+### Docker Compose
+
+```bash
+docker compose up -d postgres backend
+```
+
+This starts:
+- Postgres on `localhost:5432`
+- Rust backend on `localhost:3001`
 
 ### 4. Run the desktop shell (optional)
 
@@ -227,11 +243,12 @@ Health check: `GET /health`
 
 ## Database
 
-SQLite at `~/.local/share/en-learner/data.db` (Linux/macOS).
+Rust backend now uses Postgres through `sqlx`.
 
-Override with `DATABASE_URL=sqlite:/path/to/db`.
+Default local server URL:
+`postgres://en_learner:en_learner@127.0.0.1:5432/en_learner`
 
-Migrations run automatically on startup via `rusqlite_migration`.
+Migrations run automatically on startup through `sqlx` migrations.
 
 Desktop shell settings use a separate native SQLite file:
 - Linux/macOS default: `~/.local/share/en-learner/desktop.db`
@@ -242,6 +259,10 @@ Desktop SQLite persists:
 - connectivity mode (`auto` / `offline` / `online`)
 - guest profile name
 - cached remote auth session
+
+That split is intentional:
+- C++ / device runtime: SQLite
+- Rust / shared server runtime: Postgres
 
 **Schema summary:**
 - `words`, `phonetics`, `meanings`, `definitions` — dictionary data
@@ -307,7 +328,7 @@ RUST_LOG=info
 
 - `BACKEND_HOST` or `HOST`: bind host
 - `BACKEND_PORT` or `PORT`: bind port
-- `DATABASE_URL`: optional SQLite override
+- `DATABASE_URL`: required Postgres connection URL
 - `SERVE_FRONTEND`: opt-in static frontend hosting
 - `FRONTEND_DIST_DIR`: dist path used when `SERVE_FRONTEND=true`
 - `GET /health`: simple health endpoint for Render or other public platforms
@@ -380,8 +401,8 @@ BACKEND_HOST=0.0.0.0 PORT=3001 cargo run --manifest-path apps/backend/Cargo.toml
 
 | Decision | Rationale |
 |----------|-----------|
-| `rusqlite` over `sqlx` | Simpler for desktop — no async DB driver, connection pool via r2d2, no compile-time query checking needed |
+| `sqlx` + Postgres in Rust backend | Fits public server mode, async Axum handlers, pooled connections, and clean separation from device-local state |
 | webview.h over Electron/Tauri | No Node.js runtime, no Rust/IPC complexity — direct C++ thin shell, ~200KB binary |
 | lingva.ml for translation | Free, open API; wrapped behind a trait so it can be swapped without API changes |
-| SQLite local-only | Desktop app — no backend server, full offline support, simple distribution |
+| Native SQLite in C++ shell | Keeps device-local runtime/auth/cache state offline on the user laptop without coupling it to the server DB |
 | Turborepo for Rust/C++ | Not native to Turbo, but custom scripts integrate cleanly via `turbo.json` tasks |

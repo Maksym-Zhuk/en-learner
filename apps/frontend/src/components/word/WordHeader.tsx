@@ -4,6 +4,7 @@ import {
   Heart,
   Loader,
   Plus,
+  RotateCcw,
 } from "lucide-react";
 import { Button, Tooltip } from "@/components/ui";
 import { AudioButton } from "./AudioButton";
@@ -16,8 +17,10 @@ interface WordHeaderProps {
   onFavorite: () => void;
   onUnfavorite: () => void;
   onAddToSet: () => void;
+  onRelearn?: () => void;
   saving?: boolean;
   favoriting?: boolean;
+  relearning?: boolean;
 }
 
 export function WordHeader({
@@ -27,8 +30,10 @@ export function WordHeader({
   onFavorite,
   onUnfavorite,
   onAddToSet,
+  onRelearn,
   saving,
   favoriting,
+  relearning,
 }: WordHeaderProps) {
   return (
     <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -73,6 +78,13 @@ export function WordHeader({
 
       <div className="flex flex-col items-start gap-3 md:items-end">
         <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+          {entry.is_saved && onRelearn && (
+            <Button variant="secondary" size="sm" onClick={onRelearn} loading={relearning}>
+              <RotateCcw className="h-4 w-4" />
+              Study again
+            </Button>
+          )}
+
           <Button variant="secondary" size="sm" onClick={onAddToSet}>
             <Plus className="h-4 w-4" />
             Add to set

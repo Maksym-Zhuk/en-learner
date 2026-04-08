@@ -1,6 +1,6 @@
 import { startTransition, useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import { reviewApi } from "@/api/review";
 import { Button, FullPageSpinner, Spinner } from "@/components/ui";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
 import type {
   ReviewCard,
   ReviewRating,
@@ -73,6 +74,7 @@ const RATING_SHORTCUTS: Record<string, RatingKey> = {
 
 export default function Review() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [searchParams] = useSearchParams();
   const setId = searchParams.get("set_id") ?? undefined;
   const returnPath = setId ? `/sets/${setId}` : "/dashboard";
@@ -162,6 +164,8 @@ export default function Review() {
   const submitMutation = useMutation({
     mutationFn: reviewApi.submit,
     onSuccess: () => {
+      invalidateDashboardStats(qc);
+
       if (!sessionData) return;
 
       const nextIndex = currentIdx + 1;

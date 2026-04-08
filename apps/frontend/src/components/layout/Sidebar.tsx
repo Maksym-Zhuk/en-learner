@@ -87,18 +87,18 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 flex w-80 max-w-[88vw] flex-col overflow-y-auto border-r border-white/50 bg-white/95 backdrop-blur transition-transform dark:border-white/10 dark:bg-gray-950/95 lg:static lg:w-72 lg:max-w-none lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 flex w-80 max-w-[88vw] flex-col overflow-y-auto border-r border-white/50 bg-[rgba(255,250,242,0.94)] backdrop-blur transition-transform dark:border-white/10 dark:bg-[rgba(8,14,24,0.96)] lg:static lg:w-72 lg:max-w-none lg:translate-x-0",
         mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
       <div className="border-b border-gray-200/80 p-4 dark:border-gray-800/80">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#4f54e5,#2dd4bf)] text-white shadow-sm">
               <Brain className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-base font-semibold tracking-tight">en-learner</div>
+              <div className="font-display text-xl tracking-[-0.03em]">en-learner</div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Personal vocabulary workspace
               </p>

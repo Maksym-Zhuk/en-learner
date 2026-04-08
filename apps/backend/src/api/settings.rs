@@ -1,10 +1,17 @@
-use axum::{extract::State, Json};
-use rusqlite::params;
-use serde::Deserialize;
+use std::collections::HashMap;
 
-use crate::error::Result;
+use axum::{extract::State, Json};
+use serde::Deserialize;
+use sqlx::FromRow;
+
+use crate::error::{AppError, Result};
 use crate::models::AppSettings;
 use crate::AppState;
+
+const MIN_DAILY_REVIEW_LIMIT: i64 = 10;
+const MAX_DAILY_REVIEW_LIMIT: i64 = 500;
+const MIN_NEW_CARDS_PER_DAY: i64 = 1;
+const MAX_NEW_CARDS_PER_DAY: i64 = 100;
 
 #[derive(Deserialize)]
 pub struct UpdateSettingsRequest {
@@ -16,77 +23,252 @@ pub struct UpdateSettingsRequest {
     pub ui_language: Option<String>,
 }
 
-/// GET /api/settings
-pub async fn get_settings(State(state): State<AppState>) -> Result<Json<AppSettings>> {
-    let conn = state.db.get()?;
-    let settings = load_settings(&conn)?;
-    Ok(Json(settings))
+#[derive(FromRow)]
+struct SettingRow {
+    key: String,
+    value: String,
 }
 
-/// PUT /api/settings
+struct SettingsPatch {
+    values: Vec<(&'static str, String)>,
+}
+
+impl UpdateSettingsRequest {
+    fn into_patch(self) -> Result<SettingsPatch> {
+        let mut values = Vec::new();
+
+        if let Some(value) = self.dark_mode {
+            values.push(("dark_mode", value.to_string()));
+        }
+
+        if let Some(value) = self.daily_review_limit {
+            values.push((
+                "daily_review_limit",
+                validate_limit(
+                    "daily_review_limit",
+                    value,
+                    MIN_DAILY_REVIEW_LIMIT,
+                    MAX_DAILY_REVIEW_LIMIT,
+                )?
+                .to_string(),
+            ));
+        }
+
+        if let Some(value) = self.new_cards_per_day {
+            values.push((
+                "new_cards_per_day",
+                validate_limit(
+                    "new_cards_per_day",
+                    value,
+                    MIN_NEW_CARDS_PER_DAY,
+                    MAX_NEW_CARDS_PER_DAY,
+                )?
+                .to_string(),
+            ));
+        }
+
+        if let Some(value) = self.audio_autoplay {
+            values.push(("audio_autoplay", value.to_string()));
+        }
+
+        if let Some(value) = self.show_translation_immediately {
+            values.push(("show_translation_immediately", value.to_string()));
+        }
+
+        if let Some(value) = self.ui_language {
+            values.push(("ui_language", normalize_ui_language(&value)?));
+        }
+
+        Ok(SettingsPatch { values })
+    }
+}
+
+impl SettingsPatch {
+    async fn persist(&self, pool: &sqlx::PgPool) -> Result<()> {
+        for (key, value) in &self.values {
+            sqlx::query(
+                "INSERT INTO app_settings (key, value) VALUES ($1, $2)
+                 ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value",
+            )
+            .bind(key)
+            .bind(value)
+            .execute(pool)
+            .await?;
+        }
+
+        Ok(())
+    }
+}
+
+pub async fn get_settings(State(state): State<AppState>) -> Result<Json<AppSettings>> {
+    Ok(Json(load_settings(state.db.as_ref()).await?))
+}
+
 pub async fn update_settings(
     State(state): State<AppState>,
     Json(body): Json<UpdateSettingsRequest>,
 ) -> Result<Json<AppSettings>> {
-    let conn = state.db.get()?;
-
-    if let Some(v) = body.dark_mode {
-        set_key(&conn, "dark_mode", &v.to_string())?;
-    }
-    if let Some(v) = body.daily_review_limit {
-        set_key(&conn, "daily_review_limit", &v.to_string())?;
-    }
-    if let Some(v) = body.new_cards_per_day {
-        set_key(&conn, "new_cards_per_day", &v.to_string())?;
-    }
-    if let Some(v) = body.audio_autoplay {
-        set_key(&conn, "audio_autoplay", &v.to_string())?;
-    }
-    if let Some(v) = body.show_translation_immediately {
-        set_key(&conn, "show_translation_immediately", &v.to_string())?;
-    }
-    if let Some(v) = body.ui_language {
-        set_key(&conn, "ui_language", &v)?;
-    }
-
-    Ok(Json(load_settings(&conn)?))
+    let patch = body.into_patch()?;
+    patch.persist(state.db.as_ref()).await?;
+    Ok(Json(load_settings(state.db.as_ref()).await?))
 }
 
-fn load_settings(conn: &rusqlite::Connection) -> Result<AppSettings> {
-    fn get(conn: &rusqlite::Connection, key: &str) -> Option<String> {
-        conn.query_row(
-            "SELECT value FROM app_settings WHERE key = ?1",
-            params![key],
-            |r| r.get(0),
+async fn load_settings(pool: &sqlx::PgPool) -> Result<AppSettings> {
+    let rows = sqlx::query_as::<_, SettingRow>("SELECT key, value FROM app_settings")
+        .fetch_all(pool)
+        .await?;
+
+    Ok(settings_from_rows(rows))
+}
+
+fn settings_from_rows(rows: Vec<SettingRow>) -> AppSettings {
+    let mut settings = AppSettings::default();
+    let values: HashMap<String, String> =
+        rows.into_iter().map(|row| (row.key, row.value)).collect();
+
+    if let Some(value) = values.get("dark_mode").and_then(|value| value.parse().ok()) {
+        settings.dark_mode = value;
+    }
+
+    if let Some(value) = values
+        .get("daily_review_limit")
+        .and_then(|value| value.parse().ok())
+    {
+        settings.daily_review_limit = value;
+    }
+
+    if let Some(value) = values
+        .get("new_cards_per_day")
+        .and_then(|value| value.parse().ok())
+    {
+        settings.new_cards_per_day = value;
+    }
+
+    if let Some(value) = values
+        .get("audio_autoplay")
+        .and_then(|value| value.parse().ok())
+    {
+        settings.audio_autoplay = value;
+    }
+
+    if let Some(value) = values
+        .get("show_translation_immediately")
+        .and_then(|value| value.parse().ok())
+    {
+        settings.show_translation_immediately = value;
+    }
+
+    if let Some(value) = values
+        .get("ui_language")
+        .filter(|value| !value.trim().is_empty())
+    {
+        settings.ui_language = value.clone();
+    }
+
+    settings
+}
+
+fn validate_limit(name: &str, value: i64, min: i64, max: i64) -> Result<i64> {
+    if (min..=max).contains(&value) {
+        return Ok(value);
+    }
+
+    Err(AppError::BadRequest(format!(
+        "{name} must be between {min} and {max}"
+    )))
+}
+
+fn normalize_ui_language(value: &str) -> Result<String> {
+    let normalized = value.trim().to_ascii_lowercase();
+
+    if normalized.is_empty() {
+        return Err(AppError::BadRequest(
+            "ui_language cannot be empty".to_string(),
+        ));
+    }
+
+    Ok(normalized)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        normalize_ui_language, settings_from_rows, validate_limit, SettingRow,
+        MAX_DAILY_REVIEW_LIMIT, MAX_NEW_CARDS_PER_DAY, MIN_DAILY_REVIEW_LIMIT,
+        MIN_NEW_CARDS_PER_DAY,
+    };
+
+    #[test]
+    fn settings_should_fall_back_to_defaults_for_missing_rows() {
+        let settings = settings_from_rows(Vec::new());
+
+        assert!(!settings.dark_mode);
+        assert_eq!(settings.daily_review_limit, 100);
+        assert_eq!(settings.new_cards_per_day, 20);
+        assert!(!settings.audio_autoplay);
+        assert!(!settings.show_translation_immediately);
+        assert_eq!(settings.ui_language, "en");
+    }
+
+    #[test]
+    fn settings_should_apply_known_values_from_rows() {
+        let settings = settings_from_rows(vec![
+            SettingRow {
+                key: "dark_mode".into(),
+                value: "true".into(),
+            },
+            SettingRow {
+                key: "daily_review_limit".into(),
+                value: "150".into(),
+            },
+            SettingRow {
+                key: "new_cards_per_day".into(),
+                value: "25".into(),
+            },
+            SettingRow {
+                key: "audio_autoplay".into(),
+                value: "true".into(),
+            },
+            SettingRow {
+                key: "show_translation_immediately".into(),
+                value: "true".into(),
+            },
+            SettingRow {
+                key: "ui_language".into(),
+                value: "uk".into(),
+            },
+        ]);
+
+        assert!(settings.dark_mode);
+        assert_eq!(settings.daily_review_limit, 150);
+        assert_eq!(settings.new_cards_per_day, 25);
+        assert!(settings.audio_autoplay);
+        assert!(settings.show_translation_immediately);
+        assert_eq!(settings.ui_language, "uk");
+    }
+
+    #[test]
+    fn validate_limit_should_reject_out_of_range_values() {
+        assert!(validate_limit(
+            "daily_review_limit",
+            MIN_DAILY_REVIEW_LIMIT - 1,
+            MIN_DAILY_REVIEW_LIMIT,
+            MAX_DAILY_REVIEW_LIMIT,
         )
-        .ok()
+        .is_err());
+
+        assert!(validate_limit(
+            "new_cards_per_day",
+            MAX_NEW_CARDS_PER_DAY + 1,
+            MIN_NEW_CARDS_PER_DAY,
+            MAX_NEW_CARDS_PER_DAY,
+        )
+        .is_err());
     }
 
-    Ok(AppSettings {
-        dark_mode: get(conn, "dark_mode")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(false),
-        daily_review_limit: get(conn, "daily_review_limit")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(100),
-        new_cards_per_day: get(conn, "new_cards_per_day")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(20),
-        audio_autoplay: get(conn, "audio_autoplay")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(false),
-        show_translation_immediately: get(conn, "show_translation_immediately")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(false),
-        ui_language: get(conn, "ui_language").unwrap_or_else(|| "en".into()),
-    })
-}
-
-fn set_key(conn: &rusqlite::Connection, key: &str, value: &str) -> Result<()> {
-    conn.execute(
-        "INSERT INTO app_settings (key, value) VALUES (?1, ?2)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-        params![key, value],
-    )?;
-    Ok(())
+    #[test]
+    fn normalize_ui_language_should_trim_and_lowercase() {
+        let value = normalize_ui_language(" UK ").expect("language should normalize");
+        assert_eq!(value, "uk");
+    }
 }

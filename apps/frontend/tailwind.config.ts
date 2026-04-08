@@ -22,12 +22,17 @@ export default {
       },
       fontFamily: {
         sans: [
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
+          "Avenir Next",
           "Segoe UI",
+          "Helvetica Neue",
           "sans-serif",
+        ],
+        display: [
+          "Iowan Old Style",
+          "Palatino Linotype",
+          "Book Antiqua",
+          "Georgia",
+          "serif",
         ],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },

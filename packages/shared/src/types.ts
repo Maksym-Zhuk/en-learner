@@ -112,6 +112,20 @@ export interface SubmitReviewResponse {
   new_state: CardState;
 }
 
+export type ReviewResetMode = "forgotten" | "new";
+
+export interface ResetWordReviewRequest {
+  mode?: ReviewResetMode;
+}
+
+export interface ResetWordReviewResponse {
+  word_id: string;
+  cards_reset: number;
+  mode: ReviewResetMode;
+  due_at: string;
+  queued_at: string;
+}
+
 export interface SessionSummary {
   total_reviewed: number;
   again_count: number;

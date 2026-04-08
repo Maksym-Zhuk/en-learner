@@ -13,11 +13,12 @@ use axum::{
 use chrono::{Duration, Utc};
 use rand_core::OsRng;
 use reqwest::Url;
-use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use sqlx::{FromRow, Row};
 use uuid::Uuid;
 
 use crate::{
+    clock::utc_now_string,
     error::{AppError, Result},
     AppState,
 };
@@ -192,6 +193,13 @@ pub struct LogoutResponse {
     ok: bool,
 }
 
+#[derive(FromRow)]
+struct OAuthStatusRow {
+    expires_at: String,
+    error: Option<String>,
+    session_token: Option<String>,
+}
+
 pub async fn list_providers(State(state): State<AppState>) -> Result<Json<AuthProvidersResponse>> {
     Ok(Json(AuthProvidersResponse {
         providers: build_provider_list(&state),
@@ -207,15 +215,10 @@ pub async fn register(
     validate_password(&body.password)?;
     let password_hash = hash_password(&body.password)?;
 
-    let conn = state.db.get()?;
-
-    let existing_email: Option<String> = conn
-        .query_row(
-            "SELECT id FROM users WHERE email = ?1",
-            params![email],
-            |row| row.get(0),
-        )
-        .optional()?;
+    let existing_email = sqlx::query_scalar::<_, String>("SELECT id FROM users WHERE email = $1")
+        .bind(&email)
+        .fetch_optional(state.db.as_ref())
+        .await?;
 
     if existing_email.is_some() {
         return Err(AppError::Conflict(
@@ -224,17 +227,24 @@ pub async fn register(
     }
 
     let user_id = Uuid::new_v4().to_string();
-    conn.execute(
-        "INSERT INTO users (id, email, display_name, provider) VALUES (?1, ?2, ?3, 'password')",
-        params![user_id, email, display_name],
-    )?;
-    conn.execute(
-        "INSERT INTO user_passwords (user_id, password_hash) VALUES (?1, ?2)",
-        params![user_id, password_hash],
-    )?;
+    sqlx::query(
+        "INSERT INTO users (id, email, display_name, provider) VALUES ($1, $2, $3, 'password')",
+    )
+    .bind(&user_id)
+    .bind(&email)
+    .bind(&display_name)
+    .execute(state.db.as_ref())
+    .await?;
 
-    let session = create_auth_session(&conn, &state, &user_id)?;
-    Ok(Json(session))
+    sqlx::query("INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)")
+        .bind(&user_id)
+        .bind(&password_hash)
+        .execute(state.db.as_ref())
+        .await?;
+
+    Ok(Json(
+        create_auth_session(state.db.as_ref(), &state, &user_id).await?,
+    ))
 }
 
 pub async fn login(
@@ -243,29 +253,31 @@ pub async fn login(
 ) -> Result<Json<AuthSessionResponse>> {
     let email = normalize_email(&body.email)?;
     validate_password(&body.password)?;
-    let conn = state.db.get()?;
 
-    let record = conn
-        .query_row(
-            "SELECT users.id, user_passwords.password_hash
-             FROM users
-             JOIN user_passwords ON user_passwords.user_id = users.id
-             WHERE users.email = ?1",
-            params![email],
-            |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
-        )
-        .optional()?;
+    let record = sqlx::query(
+        "SELECT users.id, user_passwords.password_hash
+         FROM users
+         JOIN user_passwords ON user_passwords.user_id = users.id
+         WHERE users.email = $1",
+    )
+    .bind(&email)
+    .fetch_optional(state.db.as_ref())
+    .await?;
 
-    let Some((user_id, password_hash)) = record else {
+    let Some(record) = record else {
         return Err(AppError::Unauthorized("Invalid email or password".into()));
     };
+
+    let user_id: String = record.try_get("id")?;
+    let password_hash: String = record.try_get("password_hash")?;
 
     if !verify_password(&password_hash, &body.password)? {
         return Err(AppError::Unauthorized("Invalid email or password".into()));
     }
 
-    let session = create_auth_session(&conn, &state, &user_id)?;
-    Ok(Json(session))
+    Ok(Json(
+        create_auth_session(state.db.as_ref(), &state, &user_id).await?,
+    ))
 }
 
 pub async fn me(
@@ -273,9 +285,10 @@ pub async fn me(
     headers: HeaderMap,
 ) -> Result<Json<AuthUserResponse>> {
     let token = bearer_token(&headers)?;
-    let conn = state.db.get()?;
-    let session = load_auth_session_by_token(&conn, &token)?
+    let session = load_auth_session_by_token(state.db.as_ref(), &token)
+        .await?
         .ok_or_else(|| AppError::Unauthorized("Session is missing or expired".into()))?;
+
     Ok(Json(session.user))
 }
 
@@ -284,13 +297,16 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> Result<Json<LogoutResponse>> {
     let token = bearer_token(&headers)?;
-    let conn = state.db.get()?;
-    conn.execute(
+
+    sqlx::query(
         "UPDATE auth_sessions
-         SET revoked_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-         WHERE token = ?1",
-        params![token],
-    )?;
+         SET revoked_at = $2
+         WHERE token = $1",
+    )
+    .bind(token)
+    .bind(utc_now_string())
+    .execute(state.db.as_ref())
+    .await?;
 
     Ok(Json(LogoutResponse { ok: true }))
 }
@@ -317,11 +333,12 @@ pub async fn start_oauth(
         .format("%Y-%m-%dT%H:%M:%SZ")
         .to_string();
 
-    let conn = state.db.get()?;
-    conn.execute(
-        "INSERT INTO oauth_states (state, provider, expires_at) VALUES (?1, ?2, ?3)",
-        params![state_token, provider.id.as_str(), expires_at],
-    )?;
+    sqlx::query("INSERT INTO oauth_states (state, provider, expires_at) VALUES ($1, $2, $3)")
+        .bind(&state_token)
+        .bind(provider.id.as_str())
+        .bind(&expires_at)
+        .execute(state.db.as_ref())
+        .await?;
 
     let mut url = Url::parse(provider.authorize_url)
         .map_err(|e| AppError::Internal(format!("Invalid auth provider URL: {e}")))?;
@@ -353,15 +370,11 @@ pub async fn complete_oauth(
     let provider = find_provider(&provider)
         .ok_or_else(|| AppError::NotFound(format!("Unknown auth provider '{}'", provider)))?;
 
-    let exists: Option<String> = {
-        let conn = state.db.get()?;
-        conn.query_row(
-            "SELECT provider FROM oauth_states WHERE state = ?1",
-            params![query.state],
-            |row| row.get(0),
-        )
-        .optional()?
-    };
+    let exists =
+        sqlx::query_scalar::<_, String>("SELECT provider FROM oauth_states WHERE state = $1")
+            .bind(&query.state)
+            .fetch_optional(state.db.as_ref())
+            .await?;
 
     let Some(stored_provider) = exists else {
         return Ok(Html(oauth_finish_html(
@@ -372,8 +385,7 @@ pub async fn complete_oauth(
     };
 
     if stored_provider != provider.id.as_str() {
-        set_oauth_state_error(&state, &query.state, "Provider mismatch")?;
-
+        set_oauth_state_error(&state, &query.state, "Provider mismatch").await?;
         return Ok(Html(oauth_finish_html(
             "Authorization failed",
             "The provider callback did not match the pending sign-in request.",
@@ -382,8 +394,7 @@ pub async fn complete_oauth(
     }
 
     if let Some(error) = query.error.or(query.error_description) {
-        set_oauth_state_error(&state, &query.state, &error)?;
-
+        set_oauth_state_error(&state, &query.state, &error).await?;
         return Ok(Html(oauth_finish_html(
             "Authorization cancelled",
             "Return to the app and start sign-in again if you still want to connect this account.",
@@ -392,8 +403,7 @@ pub async fn complete_oauth(
     }
 
     let Some(code) = query.code else {
-        set_oauth_state_error(&state, &query.state, "Missing authorization code")?;
-
+        set_oauth_state_error(&state, &query.state, "Missing authorization code").await?;
         return Ok(Html(oauth_finish_html(
             "Authorization failed",
             "The provider did not return an authorization code.",
@@ -413,15 +423,14 @@ pub async fn complete_oauth(
                 | AppError::Unauthorized(message)
                 | AppError::Conflict(message)
                 | AppError::ExternalApi(message)
-                | AppError::Internal(message) => message.clone(),
-                AppError::NotFound(message) => message.clone(),
-                AppError::Database(_)
-                | AppError::Pool(_)
-                | AppError::Http(_)
-                | AppError::Json(_) => "Remote sign-in failed".into(),
+                | AppError::Internal(message)
+                | AppError::NotFound(message) => message.clone(),
+                AppError::Database(_) | AppError::Http(_) | AppError::Json(_) => {
+                    "Remote sign-in failed".into()
+                }
             };
 
-            set_oauth_state_error(&state, &query.state, &message)?;
+            set_oauth_state_error(&state, &query.state, &message).await?;
 
             Ok(Html(oauth_finish_html(
                 "Authorization failed",
@@ -436,28 +445,20 @@ pub async fn oauth_status(
     State(state): State<AppState>,
     Path(state_token): Path<String>,
 ) -> Result<Json<OAuthStatusResponse>> {
-    let conn = state.db.get()?;
-    let row = conn
-        .query_row(
-            "SELECT expires_at, error, session_token
-             FROM oauth_states
-             WHERE state = ?1",
-            params![state_token],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, Option<String>>(1)?,
-                    row.get::<_, Option<String>>(2)?,
-                ))
-            },
-        )
-        .optional()?;
+    let row = sqlx::query_as::<_, OAuthStatusRow>(
+        "SELECT expires_at, error, session_token
+         FROM oauth_states
+         WHERE state = $1",
+    )
+    .bind(&state_token)
+    .fetch_optional(state.db.as_ref())
+    .await?;
 
-    let Some((expires_at, error, session_token)) = row else {
+    let Some(row) = row else {
         return Err(AppError::NotFound("Authorization state not found".into()));
     };
 
-    if let Some(error) = error {
+    if let Some(error) = row.error {
         return Ok(Json(OAuthStatusResponse {
             status: "failed".into(),
             session: None,
@@ -465,10 +466,12 @@ pub async fn oauth_status(
         }));
     }
 
-    if let Some(session_token) = session_token {
-        let session = load_auth_session_by_token(&conn, &session_token)?.ok_or_else(|| {
-            AppError::Unauthorized("Remote session expired before it was claimed".into())
-        })?;
+    if let Some(session_token) = row.session_token {
+        let session = load_auth_session_by_token(state.db.as_ref(), &session_token)
+            .await?
+            .ok_or_else(|| {
+                AppError::Unauthorized("Remote session expired before it was claimed".into())
+            })?;
 
         return Ok(Json(OAuthStatusResponse {
             status: "complete".into(),
@@ -477,7 +480,7 @@ pub async fn oauth_status(
         }));
     }
 
-    if expires_at <= Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string() {
+    if row.expires_at <= utc_now_string() {
         return Ok(Json(OAuthStatusResponse {
             status: "failed".into(),
             session: None,
@@ -648,8 +651,8 @@ fn verify_password(hash: &str, password: &str) -> Result<bool> {
         .is_ok())
 }
 
-fn create_auth_session(
-    conn: &rusqlite::Connection,
+async fn create_auth_session(
+    pool: &sqlx::PgPool,
     state: &AppState,
     user_id: &str,
 ) -> Result<AuthSessionResponse> {
@@ -658,20 +661,23 @@ fn create_auth_session(
         .format("%Y-%m-%dT%H:%M:%SZ")
         .to_string();
 
-    conn.execute(
-        "INSERT INTO auth_sessions (token, user_id, expires_at) VALUES (?1, ?2, ?3)",
-        params![token, user_id, expires_at],
-    )?;
+    sqlx::query("INSERT INTO auth_sessions (token, user_id, expires_at) VALUES ($1, $2, $3)")
+        .bind(&token)
+        .bind(user_id)
+        .bind(&expires_at)
+        .execute(pool)
+        .await?;
 
-    load_auth_session_by_token(conn, &token)?
+    load_auth_session_by_token(pool, &token)
+        .await?
         .ok_or_else(|| AppError::Internal("Failed to load created session".into()))
 }
 
-fn load_auth_session_by_token(
-    conn: &rusqlite::Connection,
+async fn load_auth_session_by_token(
+    pool: &sqlx::PgPool,
     token: &str,
 ) -> Result<Option<AuthSessionResponse>> {
-    conn.query_row(
+    let row = sqlx::query(
         "SELECT
             auth_sessions.token,
             auth_sessions.expires_at,
@@ -682,26 +688,26 @@ fn load_auth_session_by_token(
             users.created_at
          FROM auth_sessions
          JOIN users ON users.id = auth_sessions.user_id
-         WHERE auth_sessions.token = ?1
+         WHERE auth_sessions.token = $1
            AND auth_sessions.revoked_at IS NULL
-           AND auth_sessions.expires_at > strftime('%Y-%m-%dT%H:%M:%SZ', 'now')",
-        params![token],
-        |row| {
-            Ok(AuthSessionResponse {
-                token: row.get(0)?,
-                expires_at: row.get(1)?,
-                user: AuthUserResponse {
-                    id: row.get(2)?,
-                    email: row.get(3)?,
-                    display_name: row.get(4)?,
-                    provider: row.get(5)?,
-                    created_at: row.get(6)?,
-                },
-            })
-        },
+           AND auth_sessions.expires_at > $2",
     )
-    .optional()
-    .map_err(Into::into)
+    .bind(token)
+    .bind(utc_now_string())
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row.map(|row| AuthSessionResponse {
+        token: row.try_get("token").expect("token column"),
+        expires_at: row.try_get("expires_at").expect("expires_at column"),
+        user: AuthUserResponse {
+            id: row.try_get("id").expect("user id"),
+            email: row.try_get("email").expect("email"),
+            display_name: row.try_get("display_name").expect("display name"),
+            provider: row.try_get("provider").expect("provider"),
+            created_at: row.try_get("created_at").expect("created_at"),
+        },
+    }))
 }
 
 fn bearer_token(headers: &HeaderMap) -> Result<String> {
@@ -767,31 +773,38 @@ async fn finish_oauth_flow(
     )
     .await?;
     let remote_user = fetch_remote_user(state, provider, &access_token).await?;
-    let conn = state.db.get()?;
-    let user_id = upsert_remote_user(&conn, provider, &remote_user)?;
-    let session = create_auth_session(&conn, state, &user_id)?;
+    let user_id = upsert_remote_user(state.db.as_ref(), provider, &remote_user).await?;
+    let session = create_auth_session(state.db.as_ref(), state, &user_id).await?;
 
-    conn.execute(
+    sqlx::query(
         "UPDATE oauth_states
-         SET completed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
+         SET completed_at = $2,
              error = NULL,
-             session_token = ?2
-         WHERE state = ?1",
-        params![state_token, session.token],
-    )?;
+             session_token = $3
+         WHERE state = $1",
+    )
+    .bind(state_token)
+    .bind(utc_now_string())
+    .bind(&session.token)
+    .execute(state.db.as_ref())
+    .await?;
 
     Ok(())
 }
 
-fn set_oauth_state_error(state: &AppState, state_token: &str, message: &str) -> Result<()> {
-    let conn = state.db.get()?;
-    conn.execute(
+async fn set_oauth_state_error(state: &AppState, state_token: &str, message: &str) -> Result<()> {
+    sqlx::query(
         "UPDATE oauth_states
-         SET completed_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
-             error = ?2
-         WHERE state = ?1",
-        params![state_token, message],
-    )?;
+         SET completed_at = $2,
+             error = $3
+         WHERE state = $1",
+    )
+    .bind(state_token)
+    .bind(utc_now_string())
+    .bind(message)
+    .execute(state.db.as_ref())
+    .await?;
+
     Ok(())
 }
 
@@ -965,90 +978,95 @@ async fn fetch_discord_user(
     })
 }
 
-fn upsert_remote_user(
-    conn: &rusqlite::Connection,
+async fn upsert_remote_user(
+    pool: &sqlx::PgPool,
     provider: OAuthProviderDefinition,
     remote_user: &ExternalAuthUser,
 ) -> Result<String> {
-    if let Some(user_id) = conn
-        .query_row(
-            "SELECT user_id
-             FROM oauth_identities
-             WHERE provider = ?1 AND provider_user_id = ?2",
-            params![provider.id.as_str(), remote_user.provider_user_id],
-            |row| row.get::<_, String>(0),
-        )
-        .optional()?
-    {
-        conn.execute(
+    let existing_identity = sqlx::query_scalar::<_, String>(
+        "SELECT user_id
+         FROM oauth_identities
+         WHERE provider = $1 AND provider_user_id = $2",
+    )
+    .bind(provider.id.as_str())
+    .bind(&remote_user.provider_user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some(user_id) = existing_identity {
+        sqlx::query(
             "UPDATE users
-             SET display_name = ?2
-             WHERE id = ?1",
-            params![user_id, remote_user.display_name],
-        )?;
-        conn.execute(
+             SET display_name = $2
+             WHERE id = $1",
+        )
+        .bind(&user_id)
+        .bind(&remote_user.display_name)
+        .execute(pool)
+        .await?;
+
+        sqlx::query(
             "UPDATE oauth_identities
-             SET email = ?3, display_name = ?4
-             WHERE provider = ?1 AND provider_user_id = ?2",
-            params![
-                provider.id.as_str(),
-                remote_user.provider_user_id,
-                remote_user.email,
-                remote_user.display_name,
-            ],
-        )?;
+             SET email = $3, display_name = $4
+             WHERE provider = $1 AND provider_user_id = $2",
+        )
+        .bind(provider.id.as_str())
+        .bind(&remote_user.provider_user_id)
+        .bind(remote_user.email.clone())
+        .bind(&remote_user.display_name)
+        .execute(pool)
+        .await?;
+
         return Ok(user_id);
     }
 
     let existing_user_id = if let Some(email) = &remote_user.email {
-        conn.query_row(
-            "SELECT id FROM users WHERE email = ?1",
-            params![email],
-            |row| row.get::<_, String>(0),
-        )
-        .optional()?
+        sqlx::query_scalar::<_, String>("SELECT id FROM users WHERE email = $1")
+            .bind(email)
+            .fetch_optional(pool)
+            .await?
     } else {
         None
     };
 
     let user_id = if let Some(existing_user_id) = existing_user_id {
-        conn.execute(
+        sqlx::query(
             "UPDATE users
-             SET display_name = ?2, provider = ?3
-             WHERE id = ?1",
-            params![
-                existing_user_id,
-                remote_user.display_name,
-                provider.id.as_str()
-            ],
-        )?;
+             SET display_name = $2, provider = $3
+             WHERE id = $1",
+        )
+        .bind(&existing_user_id)
+        .bind(&remote_user.display_name)
+        .bind(provider.id.as_str())
+        .execute(pool)
+        .await?;
+
         existing_user_id
     } else {
         let user_id = Uuid::new_v4().to_string();
-        conn.execute(
+        sqlx::query(
             "INSERT INTO users (id, email, display_name, provider)
-             VALUES (?1, ?2, ?3, ?4)",
-            params![
-                user_id,
-                remote_user.email,
-                remote_user.display_name,
-                provider.id.as_str()
-            ],
-        )?;
+             VALUES ($1, $2, $3, $4)",
+        )
+        .bind(&user_id)
+        .bind(remote_user.email.clone())
+        .bind(&remote_user.display_name)
+        .bind(provider.id.as_str())
+        .execute(pool)
+        .await?;
         user_id
     };
 
-    conn.execute(
+    sqlx::query(
         "INSERT INTO oauth_identities (provider, provider_user_id, user_id, email, display_name)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![
-            provider.id.as_str(),
-            remote_user.provider_user_id,
-            user_id,
-            remote_user.email,
-            remote_user.display_name
-        ],
-    )?;
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(provider.id.as_str())
+    .bind(&remote_user.provider_user_id)
+    .bind(&user_id)
+    .bind(remote_user.email.clone())
+    .bind(&remote_user.display_name)
+    .execute(pool)
+    .await?;
 
     Ok(user_id)
 }

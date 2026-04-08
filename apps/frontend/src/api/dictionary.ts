@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { WordEntry } from "@/types";
+import type { ResetWordReviewResponse, ReviewResetMode, WordEntry } from "@/types";
 
 export interface SearchResponse {
   entry: WordEntry;
@@ -16,6 +16,8 @@ export const dictionaryApi = {
 
   saveWord: (id: string) => api.post(`/words/${id}/save`),
   unsaveWord: (id: string) => api.delete(`/words/${id}/save`),
+  relearnWord: (id: string, mode: ReviewResetMode = "forgotten") =>
+    api.post<ResetWordReviewResponse>(`/words/${id}/relearn`, { mode }),
 
   favoriteWord: (id: string) => api.post(`/words/${id}/favorite`),
   unfavoriteWord: (id: string) => api.delete(`/words/${id}/favorite`),

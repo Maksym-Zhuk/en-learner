@@ -4,6 +4,7 @@ import { CheckCircle2, Layers, Loader, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import { Modal, Button, Input, EmptyState } from "@/components/ui";
 import { setsApi } from "@/api/sets";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
 import type { WordEntry } from "@/types";
 
 interface AddToSetModalProps {
@@ -84,6 +85,7 @@ export function AddToSetModal({
       qc.invalidateQueries({ queryKey: ["set", setId] });
       qc.invalidateQueries({ queryKey: ["set-words", setId] });
       qc.invalidateQueries({ queryKey: ["saved-words"] });
+      invalidateDashboardStats(qc);
       onAddedToSet?.();
       onClose();
     },
@@ -108,6 +110,7 @@ export function AddToSetModal({
       qc.invalidateQueries({ queryKey: ["set", set.id] });
       qc.invalidateQueries({ queryKey: ["set-words", set.id] });
       qc.invalidateQueries({ queryKey: ["saved-words"] });
+      invalidateDashboardStats(qc);
       onAddedToSet?.();
       setNewSetName("");
       setCreating(false);

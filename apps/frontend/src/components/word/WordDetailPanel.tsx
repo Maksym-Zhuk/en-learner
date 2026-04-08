@@ -4,8 +4,10 @@ import toast from "react-hot-toast";
 import { WordHeader } from "./WordHeader";
 import { MeaningsSection } from "./MeaningsSection";
 import { AddToSetModal } from "./AddToSetModal";
+import { RelearnWordModal } from "./RelearnWordModal";
 import { dictionaryApi } from "@/api/dictionary";
-import type { WordEntry } from "@/types";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
+import type { ReviewResetMode, WordEntry } from "@/types";
 
 interface WordDetailPanelProps {
   entry: WordEntry;
@@ -19,6 +21,7 @@ export function WordDetailPanel({
   onLookupWord,
 }: WordDetailPanelProps) {
   const [addToSetOpen, setAddToSetOpen] = useState(false);
+  const [relearnOpen, setRelearnOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState(entry);
   const qc = useQueryClient();
 
@@ -79,6 +82,7 @@ export function WordDetailPanel({
       const updated = updateEntry({ is_saved: true });
       syncCollectionCaches(updated);
       qc.invalidateQueries({ queryKey: ["saved-words"] });
+      invalidateDashboardStats(qc);
     },
     onError: () => toast.error("Failed to save word"),
   });
@@ -90,6 +94,7 @@ export function WordDetailPanel({
       const updated = updateEntry({ is_saved: false });
       syncCollectionCaches(updated, { removeFromSaved: true });
       qc.invalidateQueries({ queryKey: ["saved-words"] });
+      invalidateDashboardStats(qc);
     },
     onError: () => toast.error("Failed to remove word"),
   });
@@ -116,6 +121,20 @@ export function WordDetailPanel({
     onError: () => toast.error("Failed to remove favorite"),
   });
 
+  const relearnMutation = useMutation({
+    mutationFn: (mode: ReviewResetMode) => dictionaryApi.relearnWord(currentEntry.id, mode),
+    onSuccess: (_data, mode) => {
+      setRelearnOpen(false);
+      invalidateDashboardStats(qc);
+      toast.success(
+        mode === "new"
+          ? `"${currentEntry.word}" will start again as a new card`
+          : `"${currentEntry.word}" is back in your study queue`
+      );
+    },
+    onError: () => toast.error("Failed to return word to the study queue"),
+  });
+
   return (
     <div className="max-w-2xl space-y-6 animate-fade-in">
       <WordHeader
@@ -125,8 +144,10 @@ export function WordDetailPanel({
         onFavorite={() => favoriteMutation.mutate()}
         onUnfavorite={() => unfavoriteMutation.mutate()}
         onAddToSet={() => setAddToSetOpen(true)}
+        onRelearn={currentEntry.is_saved ? () => setRelearnOpen(true) : undefined}
         saving={saveMutation.isPending || unsaveMutation.isPending}
         favoriting={favoriteMutation.isPending || unfavoriteMutation.isPending}
+        relearning={relearnMutation.isPending}
       />
 
       <div className="border-t border-gray-200 dark:border-gray-800" />
@@ -149,6 +170,14 @@ export function WordDetailPanel({
           const updated = updateEntry({ is_saved: true });
           syncCollectionCaches(updated);
         }}
+      />
+
+      <RelearnWordModal
+        open={relearnOpen}
+        onClose={() => setRelearnOpen(false)}
+        word={currentEntry.word}
+        loading={relearnMutation.isPending}
+        onSelect={(mode) => relearnMutation.mutate(mode)}
       />
     </div>
   );

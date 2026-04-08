@@ -7,20 +7,24 @@ import {
   Heart,
   Loader,
   RefreshCw,
+  RotateCcw,
   Search,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { RelearnWordModal } from "@/components/word/RelearnWordModal";
 import { Button, EmptyState, Input, Skeleton } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { dictionaryApi } from "@/api/dictionary";
-import type { WordEntry } from "@/types";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
+import type { ReviewResetMode, WordEntry } from "@/types";
 
 export default function SavedWords() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [filter, setFilter] = useState("");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [relearnTarget, setRelearnTarget] = useState<WordEntry | null>(null);
 
   const {
     data: words = [],
@@ -74,6 +78,7 @@ export default function SavedWords() {
         existing ? { ...existing, is_saved: false } : existing
       );
       qc.invalidateQueries({ queryKey: ["saved-words"] });
+      invalidateDashboardStats(qc);
 
       if (removedWord) {
         toast.success(`"${removedWord.word}" removed from library`);
@@ -129,6 +134,22 @@ export default function SavedWords() {
       );
     },
     onError: () => toast.error("Failed to update favorite"),
+  });
+
+  const relearnMutation = useMutation({
+    mutationFn: ({ id, mode }: { id: string; mode: ReviewResetMode }) =>
+      dictionaryApi.relearnWord(id, mode),
+    onSuccess: (_data, variables) => {
+      const targetWord = words.find((word) => word.id === variables.id);
+      invalidateDashboardStats(qc);
+      setRelearnTarget(null);
+      toast.success(
+        variables.mode === "new"
+          ? `"${targetWord?.word ?? "Word"}" will start again as a new card`
+          : `"${targetWord?.word ?? "Word"}" is back in your study queue`
+      );
+    },
+    onError: () => toast.error("Failed to return word to the study queue"),
   });
 
   const pendingUnsaveId = unsaveMutation.isPending ? unsaveMutation.variables : null;
@@ -300,6 +321,19 @@ export default function SavedWords() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setRelearnTarget(word);
+                          }}
+                          className="rounded-lg p-1.5 transition-colors hover:bg-brand-50 dark:hover:bg-brand-950/20"
+                          aria-label="Return word to study queue"
+                          title="Return word to study queue"
+                        >
+                          <RotateCcw className="h-4 w-4 text-brand-500" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             favoriteMutation.mutate({
                               id: word.id,
                               favorite: !word.is_favorite,
@@ -372,6 +406,17 @@ export default function SavedWords() {
           )}
         </>
       )}
+
+      <RelearnWordModal
+        open={!!relearnTarget}
+        onClose={() => setRelearnTarget(null)}
+        word={relearnTarget?.word ?? ""}
+        loading={relearnMutation.isPending}
+        onSelect={(mode) => {
+          if (!relearnTarget) return;
+          relearnMutation.mutate({ id: relearnTarget.id, mode });
+        }}
+      />
     </div>
   );
 }

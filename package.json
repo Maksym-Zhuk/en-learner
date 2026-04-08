@@ -24,6 +24,9 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "backend:dev": "cd apps/backend && cargo run",
     "backend:test": "cd apps/backend && cargo test",
+    "docker:up": "docker compose up -d postgres backend",
+    "docker:down": "docker compose down",
+    "skills:sync": "bash scripts/sync-codex-skills.sh",
     "desktop:build": "npm run build:desktop",
     "setup": "npm install && cd apps/desktop && bash scripts/download_deps.sh"
   },

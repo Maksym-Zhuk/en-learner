@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+dist
+build
+target
+**/node_modules
+**/dist
+**/build
+**/target
+.turbo
+.env

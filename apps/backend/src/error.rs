@@ -26,10 +26,7 @@ pub enum AppError {
     ExternalApi(String),
 
     #[error("Database error: {0}")]
-    Database(#[from] rusqlite::Error),
-
-    #[error("Database pool error: {0}")]
-    Pool(#[from] r2d2::Error),
+    Database(#[from] sqlx::Error),
 
     #[error("HTTP client error: {0}")]
     Http(#[from] reqwest::Error),
@@ -63,14 +60,6 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "DATABASE_ERROR",
                     "A database error occurred".into(),
-                )
-            }
-            AppError::Pool(e) => {
-                tracing::error!("Pool error: {e}");
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "DATABASE_ERROR",
-                    "Connection pool error".into(),
                 )
             }
             AppError::Http(e) => {

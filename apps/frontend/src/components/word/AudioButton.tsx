@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Volume2, VolumeX, Loader } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useAppStore } from "@/store";
 
 interface AudioButtonProps {
   url: string;
@@ -11,8 +12,15 @@ export function AudioButton({ url }: AudioButtonProps) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioPlaybackAvailable = useAppStore((s) => s.audioPlaybackAvailable);
+  const audioPlaybackIssue = useAppStore((s) => s.audioPlaybackIssue);
 
   const play = async () => {
+    if (!audioPlaybackAvailable) {
+      setError(true);
+      return;
+    }
+
     if (playing) {
       audioRef.current?.pause();
       setPlaying(false);
@@ -42,9 +50,14 @@ export function AudioButton({ url }: AudioButtonProps) {
     }
   };
 
-  if (error) {
+  if (!audioPlaybackAvailable || error) {
     return (
-      <Button variant="ghost" size="icon" disabled title="Audio unavailable">
+      <Button
+        variant="ghost"
+        size="icon"
+        disabled
+        title={audioPlaybackIssue ?? "Audio unavailable"}
+      >
         <VolumeX className="h-4 w-4 text-gray-400" />
       </Button>
     );

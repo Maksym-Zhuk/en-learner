@@ -13,8 +13,10 @@ import {
   FolderSearch,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { ShareSetButton } from "@/components/sets/ShareSetButton";
 import { Button, EmptyState, Input, Modal, Skeleton } from "@/components/ui";
 import { setsApi } from "@/api/sets";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
 import type { StudySet } from "@/types";
 
 export default function Sets() {
@@ -44,6 +46,7 @@ export default function Sets() {
     onSuccess: () => {
       toast.success("Study set created");
       qc.invalidateQueries({ queryKey: ["sets"] });
+      invalidateDashboardStats(qc);
       closeCreate();
     },
     onError: (mutationError) => toast.error(getErrorMessage(mutationError, "Failed to create set")),
@@ -58,6 +61,7 @@ export default function Sets() {
     onSuccess: () => {
       toast.success("Set updated");
       qc.invalidateQueries({ queryKey: ["sets"] });
+      invalidateDashboardStats(qc);
       closeEdit();
     },
     onError: (mutationError) => toast.error(getErrorMessage(mutationError, "Failed to update set")),
@@ -68,6 +72,7 @@ export default function Sets() {
     onSuccess: () => {
       toast.success("Set deleted");
       qc.invalidateQueries({ queryKey: ["sets"] });
+      invalidateDashboardStats(qc);
     },
     onError: (mutationError) => toast.error(getErrorMessage(mutationError, "Failed to delete set")),
   });
@@ -276,6 +281,14 @@ export default function Sets() {
                   {set.word_count} {set.word_count === 1 ? "word" : "words"}
                 </div>
                 <div className="flex items-center gap-2">
+                  {set.word_count > 0 && (
+                    <ShareSetButton
+                      setId={set.id}
+                      setName={set.name}
+                      cardsCount={set.word_count}
+                      stopPropagation
+                    />
+                  )}
                   {set.word_count > 0 && (
                     <Button
                       variant="secondary"

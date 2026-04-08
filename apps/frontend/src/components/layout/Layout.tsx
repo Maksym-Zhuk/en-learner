@@ -167,7 +167,7 @@ export default function Layout() {
       <Sidebar mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-white/60 bg-gray-50/85 backdrop-blur dark:border-white/10 dark:bg-gray-950/80">
+        <header className="sticky top-0 z-20 border-b border-white/60 bg-[rgba(255,250,242,0.76)] backdrop-blur dark:border-white/10 dark:bg-[rgba(8,14,24,0.84)]">
           <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
             <Button
               variant="ghost"
@@ -182,7 +182,7 @@ export default function Layout() {
             <div className="min-w-0 flex-1">
               <div className="eyebrow">Learning Workspace</div>
               <div className="mt-1 flex items-center gap-2">
-                <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <p className="truncate font-display text-lg tracking-[-0.03em] text-gray-900 dark:text-gray-100">
                   {pageMeta.title}
                 </p>
                 <span className="hidden h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-700 sm:block" />

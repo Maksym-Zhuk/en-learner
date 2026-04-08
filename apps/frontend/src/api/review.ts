@@ -23,8 +23,11 @@ export const reviewApi = {
   summary: (sessionId: string) =>
     api.get<SessionSummary>(`/review/session/${sessionId}/summary`),
 
+  createSharedSetLink: (setId: string) =>
+    api.post<PublicTestLink>(`/sets/${setId}/share`),
+
   createPublicTestLink: (setId: string) =>
-    api.post<PublicTestLink>(`/sets/${setId}/share-test`),
+    api.post<PublicTestLink>(`/sets/${setId}/share`),
 
   getPublicTestDeck: (token: string) =>
     api.get<PublicTestDeck>(`/public/tests/${token}`),

@@ -22,6 +22,7 @@ apps/desktop/include/webview/
 *.swo
 .claude/
 .codex
+.agents/
 
 # OS
 .DS_Store
@@ -35,3 +36,4 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+scripts/sync-codex-skills.sh

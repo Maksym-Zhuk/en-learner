@@ -7,6 +7,7 @@ import { Button, EmptyState, Input } from "@/components/ui";
 import { WordDetailPanel } from "@/components/word/WordDetailPanel";
 import { dictionaryApi } from "@/api/dictionary";
 import { historyApi, type HistoryEntry } from "@/api/history";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
 import { useAppStore } from "@/store";
 import type { WordEntry } from "@/types";
 
@@ -59,6 +60,7 @@ export default function Search() {
       try {
         await historyApi.record(searchedQuery, entry.id);
         qc.invalidateQueries({ queryKey: ["history"] });
+        invalidateDashboardStats(qc);
       } catch {
         toast.error("Word found, but search history could not be saved");
       }

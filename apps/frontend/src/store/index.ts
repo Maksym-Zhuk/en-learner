@@ -17,6 +17,9 @@ interface AppStore {
 
   connectivityMode: ConnectivityMode;
   setConnectivityMode: (mode: ConnectivityMode) => void;
+  audioPlaybackAvailable: boolean;
+  audioPlaybackIssue: string | null;
+  setAudioPlaybackState: (available: boolean, issue?: string | null) => void;
 
   authMode: AuthMode;
   authSession: AuthSession | null;
@@ -44,6 +47,13 @@ export const useAppStore = create<AppStore>()(
 
       connectivityMode: "auto",
       setConnectivityMode: (mode) => set({ connectivityMode: mode }),
+      audioPlaybackAvailable: true,
+      audioPlaybackIssue: null,
+      setAudioPlaybackState: (available, issue) =>
+        set({
+          audioPlaybackAvailable: available,
+          audioPlaybackIssue: issue ?? null,
+        }),
 
       authMode: "none",
       authSession: null,
@@ -75,6 +85,8 @@ export const useAppStore = create<AppStore>()(
         darkMode: s.darkMode,
         lastSearchQuery: s.lastSearchQuery,
         connectivityMode: s.connectivityMode,
+        audioPlaybackAvailable: s.audioPlaybackAvailable,
+        audioPlaybackIssue: s.audioPlaybackIssue,
         authMode: s.authMode,
         authSession: s.authSession,
         localProfileName: s.localProfileName,

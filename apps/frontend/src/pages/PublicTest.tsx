@@ -156,8 +156,8 @@ export default function PublicTest() {
     return (
       <CenteredState
         icon={<AlertCircle className="h-10 w-10 text-red-400" />}
-        title="Missing public test token"
-        description="This shared test link is incomplete."
+        title="Missing shared deck token"
+        description="This shared deck link is incomplete."
         actions={
           <Button onClick={() => navigate("/dashboard")}>
             <ArrowLeft className="h-4 w-4" />
@@ -172,7 +172,7 @@ export default function PublicTest() {
     return (
       <CenteredState
         icon={<AlertCircle className="h-10 w-10 text-red-400" />}
-        title="Couldn’t load this public test"
+        title="Couldn’t load this shared deck"
         description={getErrorMessage(error, "The link may be invalid or unavailable.")}
         actions={
           <>
@@ -194,7 +194,7 @@ export default function PublicTest() {
     return (
       <CenteredState
         icon={<BookOpenCheck className="h-10 w-10 text-brand-500" />}
-        title="This shared test has no cards yet"
+        title="This shared deck has no cards yet"
         description="Add words to the set first, then generate the link again."
         actions={
           <Button onClick={() => navigate("/dashboard")}>
@@ -210,7 +210,7 @@ export default function PublicTest() {
     return (
       <CenteredState
         icon={<CheckCircle2 className="h-12 w-12 text-green-500" />}
-        title="Public test complete"
+        title="Shared deck complete"
         description={`You finished ${deck.total} ${deck.total === 1 ? "card" : "cards"} from ${deck.set_name}.`}
         body={
           <div className="grid gap-3 sm:grid-cols-2">
@@ -281,7 +281,7 @@ export default function PublicTest() {
 
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {deck.set_name} public test
+                {deck.set_name} shared deck
               </div>
               <div className="text-xs text-gray-500">
                 Card {currentIdx + 1} of {totalCards} · {remainingCount} left after this one
@@ -314,7 +314,7 @@ export default function PublicTest() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
             <div className="flex flex-wrap gap-2">
               <InfoPill label={getFaceLabel(card.face)} />
-              <InfoPill label="Public mode" />
+              <InfoPill label="Shared mode" />
             </div>
             <div className="flex items-center gap-2">
               <Clock3 className="h-4 w-4" />
@@ -394,9 +394,9 @@ async function copyCurrentLink(token: string) {
 
   try {
     await navigator.clipboard.writeText(url);
-    toast.success("Public test link copied");
+    toast.success("Shared deck link copied");
   } catch {
-    toast.error(url);
+    toast.success(`Share this link: ${url}`);
   }
 }
 

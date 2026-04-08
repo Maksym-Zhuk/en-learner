@@ -12,6 +12,8 @@ declare global {
     authSessionJson: string | null;
     localProfileName: string;
     persistedBackendUrl: string | null;
+    audioPlaybackAvailable: boolean;
+    audioPlaybackIssue: string | null;
     managesBackend: boolean;
     productionBuild: boolean;
     backendCheckable: boolean;

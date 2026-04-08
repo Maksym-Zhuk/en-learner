@@ -1,8 +1,9 @@
 use axum::{extract::State, Json};
-use chrono::Utc;
-use rusqlite::params;
+use chrono::{Duration, NaiveDate};
 use serde::Serialize;
+use sqlx::FromRow;
 
+use crate::clock::{utc_now_string, utc_today_string};
 use crate::error::Result;
 use crate::AppState;
 
@@ -26,7 +27,7 @@ pub struct WordsByState {
     pub relearning: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 pub struct HardWord {
     pub word_id: String,
     pub word: String,
@@ -34,7 +35,7 @@ pub struct HardWord {
     pub ease_factor: f64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 pub struct RecentWord {
     pub word_id: String,
     pub word: String,
@@ -44,7 +45,7 @@ pub struct RecentWord {
     pub search_count: i64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, FromRow)]
 pub struct StudySetSummary {
     pub id: String,
     pub name: String,
@@ -54,181 +55,138 @@ pub struct StudySetSummary {
     pub updated_at: String,
 }
 
-/// GET /api/dashboard/stats
 pub async fn stats(State(state): State<AppState>) -> Result<Json<DashboardStats>> {
-    let conn = state.db.get()?;
-    let now = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    let today = Utc::now().format("%Y-%m-%d").to_string();
-    let today_start = format!("{}T00:00:00Z", today);
+    let now = utc_now_string();
+    let today = utc_today_string();
+    let today_start = format!("{today}T00:00:00Z");
 
-    let total_words_saved: i64 =
-        conn.query_row("SELECT COUNT(*) FROM saved_words", [], |r| r.get(0))?;
+    let total_words_saved = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM saved_words")
+        .fetch_one(state.db.as_ref())
+        .await?;
 
-    let words_due_today: i64 = conn.query_row(
-        "SELECT COUNT(DISTINCT rc.word_id) FROM review_cards rc
+    let words_due_today = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(DISTINCT rc.word_id)
+         FROM review_cards rc
          JOIN saved_words sw ON sw.word_id = rc.word_id
-         WHERE rc.due_at <= ?1",
-        params![now],
-        |r| r.get(0),
-    )?;
+         WHERE rc.due_at <= $1",
+    )
+    .bind(&now)
+    .fetch_one(state.db.as_ref())
+    .await?;
 
-    let total_reviews_today: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM review_logs WHERE reviewed_at >= ?1",
-        params![today_start],
-        |r| r.get(0),
-    )?;
+    let total_reviews_today =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM review_logs WHERE reviewed_at >= $1")
+            .bind(&today_start)
+            .fetch_one(state.db.as_ref())
+            .await?;
 
-    let streak = compute_streak(&conn)?;
-
-    let words_by_state = {
-        let new: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM review_cards rc JOIN saved_words sw ON sw.word_id = rc.word_id WHERE rc.state = 'new'",
-            [], |r| r.get(0),
-        )?;
-        let learning: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM review_cards rc JOIN saved_words sw ON sw.word_id = rc.word_id WHERE rc.state = 'learning'",
-            [], |r| r.get(0),
-        )?;
-        let review: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM review_cards rc JOIN saved_words sw ON sw.word_id = rc.word_id WHERE rc.state = 'review'",
-            [], |r| r.get(0),
-        )?;
-        let relearning: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM review_cards rc JOIN saved_words sw ON sw.word_id = rc.word_id WHERE rc.state = 'relearning'",
-            [], |r| r.get(0),
-        )?;
-        WordsByState {
-            new,
-            learning,
-            review,
-            relearning,
-        }
+    let words_by_state = WordsByState {
+        new: count_words_by_state(state.db.as_ref(), "new").await?,
+        learning: count_words_by_state(state.db.as_ref(), "learning").await?,
+        review: count_words_by_state(state.db.as_ref(), "review").await?,
+        relearning: count_words_by_state(state.db.as_ref(), "relearning").await?,
     };
 
-    let hardest_words: Vec<HardWord> = {
-        let mut stmt = conn.prepare(
-            "SELECT rc.word_id, w.word, SUM(rc.lapses) as total_lapses, MIN(rc.ease_factor) as min_ease
-             FROM review_cards rc
-             JOIN words w ON w.id = rc.word_id
-             JOIN saved_words sw ON sw.word_id = rc.word_id
-             WHERE rc.lapses > 0
-             GROUP BY rc.word_id
-             ORDER BY total_lapses DESC, min_ease ASC
-             LIMIT 5",
-        )?;
-        let rows: Vec<HardWord> = stmt
-            .query_map([], |r| {
-                Ok(HardWord {
-                    word_id: r.get(0)?,
-                    word: r.get(1)?,
-                    lapses: r.get(2)?,
-                    ease_factor: r.get(3)?,
-                })
-            })?
-            .collect::<std::result::Result<_, _>>()?;
-        rows
-    };
-
-    let recent_sets = load_recent_sets(&conn)?;
-    let recent_words = load_recent_words(&conn)?;
+    let hardest_words = sqlx::query_as::<_, HardWord>(
+        "SELECT rc.word_id, w.word,
+                SUM(rc.lapses)::BIGINT AS lapses,
+                MIN(rc.ease_factor) AS ease_factor
+         FROM review_cards rc
+         JOIN words w ON w.id = rc.word_id
+         JOIN saved_words sw ON sw.word_id = rc.word_id
+         WHERE rc.lapses > 0
+         GROUP BY rc.word_id, w.word
+         ORDER BY lapses DESC, ease_factor ASC
+         LIMIT 5",
+    )
+    .fetch_all(state.db.as_ref())
+    .await?;
 
     Ok(Json(DashboardStats {
         total_words_saved,
         words_due_today,
-        current_streak_days: streak,
+        current_streak_days: compute_streak(state.db.as_ref()).await?,
         total_reviews_today,
         words_by_state,
         hardest_words,
-        recent_sets,
-        recent_words,
+        recent_sets: load_recent_sets(state.db.as_ref()).await?,
+        recent_words: load_recent_words(state.db.as_ref()).await?,
     }))
 }
 
-fn load_recent_sets(conn: &rusqlite::Connection) -> Result<Vec<StudySetSummary>> {
-    let mut stmt = conn.prepare(
+async fn count_words_by_state(pool: &sqlx::PgPool, state_name: &str) -> Result<i64> {
+    Ok(sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*)
+         FROM review_cards rc
+         JOIN saved_words sw ON sw.word_id = rc.word_id
+         WHERE rc.state = $1",
+    )
+    .bind(state_name)
+    .fetch_one(pool)
+    .await?)
+}
+
+async fn load_recent_sets(pool: &sqlx::PgPool) -> Result<Vec<StudySetSummary>> {
+    Ok(sqlx::query_as::<_, StudySetSummary>(
         "SELECT s.id, s.name, s.description, s.created_at, s.updated_at,
-                COUNT(sw.word_id) as word_count
+                COUNT(sw.word_id)::BIGINT AS word_count
          FROM study_sets s
          LEFT JOIN study_set_words sw ON sw.set_id = s.id
          GROUP BY s.id, s.name, s.description, s.created_at, s.updated_at
          ORDER BY s.updated_at DESC
          LIMIT 5",
-    )?;
-    let sets = stmt
-        .query_map([], |r| {
-            Ok(StudySetSummary {
-                id: r.get(0)?,
-                name: r.get(1)?,
-                description: r.get(2)?,
-                created_at: r.get(3)?,
-                updated_at: r.get(4)?,
-                word_count: r.get(5)?,
-            })
-        })?
-        .collect::<std::result::Result<_, _>>()?;
-    Ok(sets)
+    )
+    .fetch_all(pool)
+    .await?)
 }
 
-fn load_recent_words(conn: &rusqlite::Connection) -> Result<Vec<RecentWord>> {
-    let mut stmt = conn.prepare(
+async fn load_recent_words(pool: &sqlx::PgPool) -> Result<Vec<RecentWord>> {
+    Ok(sqlx::query_as::<_, RecentWord>(
         "SELECT sh.word_id, w.word,
                 (
                     SELECT ph.text
                     FROM phonetics ph
-                    WHERE ph.word_id = w.id
+                    WHERE ph.word_id = sh.word_id
                       AND ph.text IS NOT NULL
-                      AND TRIM(ph.text) != ''
+                      AND BTRIM(ph.text) != ''
                     ORDER BY ph.id
                     LIMIT 1
                 ) AS phonetic_text,
                 (
                     SELECT t.text
                     FROM translations t
-                    WHERE t.word_id = w.id
+                    WHERE t.word_id = sh.word_id
                       AND t.target_lang = 'uk'
                     ORDER BY t.id
                     LIMIT 1
                 ) AS translation_uk,
-                MAX(sh.searched_at) as last_searched_at,
-                COUNT(*) as search_count
+                MAX(sh.searched_at) AS last_searched_at,
+                COUNT(*)::BIGINT AS search_count
          FROM search_history sh
          JOIN words w ON w.id = sh.word_id
          WHERE sh.word_id IS NOT NULL
          GROUP BY sh.word_id, w.word
          ORDER BY last_searched_at DESC
          LIMIT 8",
-    )?;
-    let words = stmt
-        .query_map([], |r| {
-            Ok(RecentWord {
-                word_id: r.get(0)?,
-                word: r.get(1)?,
-                phonetic_text: r.get(2)?,
-                translation_uk: r.get(3)?,
-                last_searched_at: r.get(4)?,
-                search_count: r.get(5)?,
-            })
-        })?
-        .collect::<std::result::Result<_, _>>()?;
-    Ok(words)
+    )
+    .fetch_all(pool)
+    .await?)
 }
 
-fn compute_streak(conn: &rusqlite::Connection) -> Result<i64> {
-    // Count consecutive days with at least one review going backwards from today
-    let today = Utc::now().format("%Y-%m-%d").to_string();
-    let mut streak = 0i64;
+async fn compute_streak(pool: &sqlx::PgPool) -> Result<i64> {
+    let today = utc_today_string();
+    let mut streak = 0_i64;
     let mut check_date = today.clone();
 
     loop {
-        let count: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM daily_stats WHERE date = ?1 AND words_reviewed > 0",
-            params![check_date],
-            |r| r.get(0),
-        )?;
+        let count = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM daily_stats WHERE date = $1 AND words_reviewed > 0",
+        )
+        .bind(&check_date)
+        .fetch_one(pool)
+        .await?;
 
         if count == 0 && streak == 0 && check_date == today {
-            // Today has no reviews yet – that's okay, don't break streak
-            // Move to yesterday and continue counting
             check_date = prev_day(&check_date);
             continue;
         }
@@ -240,7 +198,6 @@ fn compute_streak(conn: &rusqlite::Connection) -> Result<i64> {
         streak += 1;
         check_date = prev_day(&check_date);
 
-        // Safety: don't loop forever
         if streak > 3650 {
             break;
         }
@@ -250,82 +207,17 @@ fn compute_streak(conn: &rusqlite::Connection) -> Result<i64> {
 }
 
 fn prev_day(date: &str) -> String {
-    // date is "YYYY-MM-DD"
-    use chrono::NaiveDate;
     NaiveDate::parse_from_str(date, "%Y-%m-%d")
-        .map(|d| {
-            (d - chrono::Duration::days(1))
-                .format("%Y-%m-%d")
-                .to_string()
-        })
+        .map(|d| (d - Duration::days(1)).format("%Y-%m-%d").to_string())
         .unwrap_or_else(|_| date.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::load_recent_words;
+    use super::prev_day;
 
     #[test]
-    fn recent_words_collapses_multiple_phonetics_into_one_entry() {
-        let conn = rusqlite::Connection::open_in_memory().expect("in-memory sqlite");
-        conn.execute_batch(
-            "CREATE TABLE words (
-                id TEXT PRIMARY KEY,
-                word TEXT NOT NULL
-            );
-            CREATE TABLE phonetics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word_id TEXT NOT NULL,
-                text TEXT
-            );
-            CREATE TABLE translations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                word_id TEXT NOT NULL,
-                target_lang TEXT NOT NULL,
-                text TEXT NOT NULL
-            );
-            CREATE TABLE search_history (
-                id TEXT PRIMARY KEY,
-                query TEXT NOT NULL,
-                word_id TEXT,
-                searched_at TEXT NOT NULL
-            );",
-        )
-        .expect("schema");
-
-        conn.execute("INSERT INTO words (id, word) VALUES ('word-1', 'run')", [])
-            .expect("word");
-        conn.execute(
-            "INSERT INTO phonetics (word_id, text) VALUES ('word-1', '/rʌn/')",
-            [],
-        )
-        .expect("phonetic 1");
-        conn.execute(
-            "INSERT INTO phonetics (word_id, text) VALUES ('word-1', '/run/')",
-            [],
-        )
-        .expect("phonetic 2");
-        conn.execute(
-            "INSERT INTO translations (word_id, target_lang, text) VALUES ('word-1', 'uk', 'бігти')",
-            [],
-        )
-        .expect("translation");
-        conn.execute(
-            "INSERT INTO search_history (id, query, word_id, searched_at) VALUES ('history-1', 'run', 'word-1', '2026-04-07T12:00:00Z')",
-            [],
-        )
-        .expect("history 1");
-        conn.execute(
-            "INSERT INTO search_history (id, query, word_id, searched_at) VALUES ('history-2', 'run', 'word-1', '2026-04-07T12:05:00Z')",
-            [],
-        )
-        .expect("history 2");
-
-        let recent_words = load_recent_words(&conn).expect("recent words");
-
-        assert_eq!(recent_words.len(), 1);
-        assert_eq!(recent_words[0].word_id, "word-1");
-        assert_eq!(recent_words[0].search_count, 2);
-        assert_eq!(recent_words[0].translation_uk.as_deref(), Some("бігти"));
+    fn prev_day_moves_back_one_day() {
+        assert_eq!(prev_day("2026-04-08"), "2026-04-07");
     }
 }

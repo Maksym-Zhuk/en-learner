@@ -19,6 +19,14 @@ endif()
 
 add_executable(en-learner
     src/main.cpp
+    src/desktop/application.cpp
+    src/desktop/bridge.cpp
+    src/desktop/env.cpp
+    src/desktop/frontend_server.cpp
+    src/desktop/network.cpp
+    src/desktop/platform.cpp
+    src/desktop/runtime.cpp
+    src/desktop/storage.cpp
 )
 
 find_path(SQLITE3_INCLUDE_DIR sqlite3.h)
@@ -30,6 +38,7 @@ endif()
 
 target_include_directories(en-learner PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${SQLITE3_INCLUDE_DIR}
 )
 

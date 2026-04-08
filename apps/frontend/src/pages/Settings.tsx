@@ -388,6 +388,17 @@ export default function Settings() {
                   description="Current reachability according to the desktop shell."
                   value={getBackendStatusLabel(nativeRuntime)}
                 />
+                <ReadonlySetting
+                  icon={<Volume2 className="h-4 w-4" />}
+                  label="Audio output"
+                  description={
+                    nativeRuntime.audioPlaybackAvailable
+                      ? "Desktop runtime can play pronunciation audio."
+                      : nativeRuntime.audioPlaybackIssue ??
+                        "Desktop runtime cannot play pronunciation audio on this system."
+                  }
+                  value={nativeRuntime.audioPlaybackAvailable ? "Available" : "Unavailable"}
+                />
               </div>
 
               <div className="panel-muted space-y-3">

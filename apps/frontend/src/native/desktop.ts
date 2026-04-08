@@ -13,6 +13,8 @@ export interface NativeRuntimeInfo {
   authSession: AuthSession | null;
   localProfileName: string;
   persistedBackendUrl: string | null;
+  audioPlaybackAvailable: boolean;
+  audioPlaybackIssue: string | null;
   managesBackend: boolean;
   productionBuild: boolean;
   backendCheckable: boolean;
@@ -71,6 +73,8 @@ function mapRuntimeInfo(
     authSession,
     localProfileName: info.localProfileName,
     persistedBackendUrl: info.persistedBackendUrl,
+    audioPlaybackAvailable: info.audioPlaybackAvailable,
+    audioPlaybackIssue: info.audioPlaybackIssue,
     managesBackend: info.managesBackend,
     productionBuild: info.productionBuild,
     backendCheckable: info.backendCheckable,

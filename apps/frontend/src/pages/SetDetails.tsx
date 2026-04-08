@@ -10,14 +10,13 @@ import {
   RefreshCw,
   FolderSearch,
   Plus,
-  Link2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button, EmptyState, Input, Skeleton } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
+import { ShareSetButton } from "@/components/sets/ShareSetButton";
 import { setsApi } from "@/api/sets";
-import { reviewApi } from "@/api/review";
-import { buildPublicTestUrl } from "@/utils/public-links";
+import { invalidateDashboardStats } from "@/lib/dashboard-sync";
 
 export default function SetDetails() {
   const { id } = useParams<{ id: string }>();
@@ -60,28 +59,13 @@ export default function SetDetails() {
       qc.invalidateQueries({ queryKey: ["set-words", id] });
       qc.invalidateQueries({ queryKey: ["set", id] });
       qc.invalidateQueries({ queryKey: ["sets"] });
+      invalidateDashboardStats(qc);
       toast.success("Removed from set");
     },
     onError: (mutationError) => toast.error(getErrorMessage(mutationError, "Failed to remove")),
     onSettled: () => {
       setRemovingWordId(null);
     },
-  });
-
-  const shareMutation = useMutation({
-    mutationFn: () => reviewApi.createPublicTestLink(id!),
-    onSuccess: async (data) => {
-      const shareUrl = buildPublicTestUrl(data.token);
-
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success("Public test link copied");
-      } catch {
-        toast.success(`Public test link: ${shareUrl}`);
-      }
-    },
-    onError: (mutationError) =>
-      toast.error(getErrorMessage(mutationError, "Failed to create public test link")),
   });
 
   if (loadingSet || loadingWords) {
@@ -196,15 +180,12 @@ export default function SetDetails() {
               <Plus className="h-4 w-4" />
               Add words
             </Button>
-            <Button
-              variant="secondary"
-              disabled={words.length === 0}
-              loading={shareMutation.isPending}
-              onClick={() => shareMutation.mutate()}
-            >
-              <Link2 className="h-4 w-4" />
-              Copy test link
-            </Button>
+            <ShareSetButton
+              setId={id!}
+              setName={set.name}
+              cardsCount={words.length}
+              label="Share set"
+            />
             <Button
               disabled={words.length === 0}
               onClick={() => navigate(`/review?set_id=${id}`)}
