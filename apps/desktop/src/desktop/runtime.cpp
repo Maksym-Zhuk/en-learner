@@ -175,29 +175,7 @@ std::string resolve_backend_url(const std::optional<std::string>& persisted_back
         return *persisted_backend_url;
     }
 
-    auto host = env_value("BACKEND_HOST");
-    if (!host.has_value()) {
-        host = env_value("HOST");
-    }
-
-    std::string resolved_host = host.value_or("127.0.0.1");
-    if (
-        resolved_host == "0.0.0.0" ||
-        resolved_host == "::" ||
-        resolved_host == "[::]" ||
-        resolved_host == "localhost"
-    ) {
-        resolved_host = "127.0.0.1";
-    }
-
-    int port = DEFAULT_BACKEND_PORT;
-    if (env_value("BACKEND_PORT").has_value()) {
-        port = env_int("BACKEND_PORT");
-    } else if (env_value("PORT").has_value()) {
-        port = env_int("PORT");
-    }
-
-    return "http://" + resolved_host + ":" + std::to_string(port);
+    return "";
 }
 
 bool should_spawn_backend(const std::string& backend_url) {

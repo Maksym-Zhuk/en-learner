@@ -3,7 +3,6 @@
 #include "desktop/bridge.h"
 #include "desktop/env.h"
 #include "desktop/frontend_server.h"
-#include "desktop/network.h"
 #include "desktop/platform.h"
 #include "desktop/runtime.h"
 #include "desktop/storage.h"
@@ -36,14 +35,14 @@ public:
         std::cout << "en-learner starting...\n";
 
         initialize_storage();
-        const std::string backend_url = prepare_backend();
+        const std::string backend_url = prepare_remote_backend();
         const std::string frontend_url = prepare_frontend();
         runtime_context_->frontend_url = frontend_url;
 
         std::cout << "Opening webview: " << frontend_url << "\n";
         run_window(backend_url, frontend_url);
 
-        std::cout << "Window closed. Shutting down backend...\n";
+        std::cout << "Window closed. Shutting down desktop shell...\n";
         return 0;
     }
 
@@ -57,44 +56,16 @@ private:
         }
     }
 
-    std::string prepare_backend() {
-        const std::string backend_url =
-            resolve_backend_url(runtime_context_->persisted_backend_url);
-        const auto local_backend = parse_local_backend_endpoint(backend_url);
+    std::string prepare_remote_backend() {
+        const std::string backend_url = resolve_backend_url(runtime_context_->persisted_backend_url);
         runtime_context_->backend_url = backend_url;
 
-        if (!should_spawn_backend(backend_url)) {
-            std::cout << "Backend auto-start disabled. Expecting API at " << backend_url << ".\n";
+        if (backend_url.empty()) {
+            std::cout << "Desktop local-first mode enabled. Remote backend is not configured.\n";
             return backend_url;
         }
 
-        if (!local_backend.has_value()) {
-            throw std::runtime_error(
-                "Error: EN_LEARNER_SPAWN_BACKEND requires a local http backend URL."
-            );
-        }
-
-        if (is_port_open(local_backend->host, local_backend->port)) {
-            std::cout << "Backend already reachable at " << backend_url << ". Reusing it.\n";
-            return backend_url;
-        }
-
-        try {
-            const std::string backend_exe = find_backend_exe();
-            std::cout << "Starting backend: " << backend_exe << "\n";
-            backend_process_ = start_backend(backend_exe);
-            owns_backend_ = true;
-            runtime_context_->owns_backend = true;
-        } catch (const std::exception& e) {
-            throw std::runtime_error(std::string("Error: ") + e.what());
-        }
-
-        std::cout << "Waiting for backend at " << backend_url << "...\n";
-        if (!wait_for_backend(*local_backend, 15000)) {
-            throw std::runtime_error("Error: Backend did not start in time. Check logs.");
-        }
-
-        std::cout << "Backend ready.\n";
+        std::cout << "Desktop remote features will use " << backend_url << ".\n";
         return backend_url;
     }
 
@@ -155,18 +126,10 @@ private:
             frontend_server_.reset();
         }
 
-        if (owns_backend_) {
-            stop_backend(backend_process_);
-            owns_backend_ = false;
-            runtime_context_->owns_backend = false;
-        }
-
         close_desktop_storage(desktop_storage_);
         desktop_storage_.reset();
     }
 
-    BackendProcess backend_process_{};
-    bool owns_backend_ = false;
     std::unique_ptr<FrontendServer> frontend_server_;
     std::shared_ptr<DesktopStorage> desktop_storage_;
     std::shared_ptr<DesktopRuntimeContext> runtime_context_;

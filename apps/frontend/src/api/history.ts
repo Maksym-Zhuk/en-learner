@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { desktopLocalCore } from "@/lib/local-core";
 
 export interface HistoryEntry {
   id: string;
@@ -9,7 +10,12 @@ export interface HistoryEntry {
 }
 
 export const historyApi = {
-  list: () => api.get<HistoryEntry[]>("/history"),
+  list: () =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.listHistory()
+      : api.get<HistoryEntry[]>("/history"),
   record: (query: string, word_id?: string) =>
-    api.post("/history", { query, word_id }),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.recordSearch(query, word_id)
+      : api.post("/history", { query, word_id }),
 };

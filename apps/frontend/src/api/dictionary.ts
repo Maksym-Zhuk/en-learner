@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { desktopLocalCore } from "@/lib/local-core";
 import type { ResetWordReviewResponse, ReviewResetMode, WordEntry } from "@/types";
 
 export interface SearchResponse {
@@ -8,19 +9,44 @@ export interface SearchResponse {
 
 export const dictionaryApi = {
   search: (q: string) =>
-    api.get<SearchResponse>(`/words/search?q=${encodeURIComponent(q)}`),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.searchWord(q)
+      : api.get<SearchResponse>(`/words/search?q=${encodeURIComponent(q)}`),
 
-  getWord: (id: string) => api.get<WordEntry>(`/words/${id}`),
+  getWord: (id: string) =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.getWord(id)
+      : api.get<WordEntry>(`/words/${id}`),
 
-  listSaved: () => api.get<WordEntry[]>("/words/saved"),
+  listSaved: () =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.listSavedWords()
+      : api.get<WordEntry[]>("/words/saved"),
 
-  saveWord: (id: string) => api.post(`/words/${id}/save`),
-  unsaveWord: (id: string) => api.delete(`/words/${id}/save`),
+  saveWord: (id: string) =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.saveWord(id)
+      : api.post(`/words/${id}/save`),
+  unsaveWord: (id: string) =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.unsaveWord(id)
+      : api.delete(`/words/${id}/save`),
   relearnWord: (id: string, mode: ReviewResetMode = "forgotten") =>
-    api.post<ResetWordReviewResponse>(`/words/${id}/relearn`, { mode }),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.relearnWord(id, mode)
+      : api.post<ResetWordReviewResponse>(`/words/${id}/relearn`, { mode }),
 
-  favoriteWord: (id: string) => api.post(`/words/${id}/favorite`),
-  unfavoriteWord: (id: string) => api.delete(`/words/${id}/favorite`),
+  favoriteWord: (id: string) =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.favoriteWord(id)
+      : api.post(`/words/${id}/favorite`),
+  unfavoriteWord: (id: string) =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.unfavoriteWord(id)
+      : api.delete(`/words/${id}/favorite`),
 
-  listFavorites: () => api.get<WordEntry[]>("/favorites"),
+  listFavorites: () =>
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.listFavorites()
+      : api.get<WordEntry[]>("/favorites"),
 };

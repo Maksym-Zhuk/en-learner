@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { desktopLocalCore } from "@/lib/local-core";
 import type {
   PublicTestDeck,
   PublicTestLink,
@@ -10,6 +11,10 @@ import type {
 
 export const reviewApi = {
   startSession: (setId?: string, limit?: number) => {
+    if (desktopLocalCore.isAvailable()) {
+      return desktopLocalCore.startReviewSession(setId, limit);
+    }
+
     const params = new URLSearchParams();
     if (setId) params.set("set_id", setId);
     if (limit) params.set("limit", String(limit));
@@ -18,16 +23,24 @@ export const reviewApi = {
   },
 
   submit: (data: SubmitReviewRequest) =>
-    api.post<SubmitReviewResponse>("/review/submit", data),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.submitReview(data)
+      : api.post<SubmitReviewResponse>("/review/submit", data),
 
   summary: (sessionId: string) =>
-    api.get<SessionSummary>(`/review/session/${sessionId}/summary`),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.getSessionSummary(sessionId)
+      : api.get<SessionSummary>(`/review/session/${sessionId}/summary`),
 
   createSharedSetLink: (setId: string) =>
-    api.post<PublicTestLink>(`/sets/${setId}/share`),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.createSharedSetLink(setId)
+      : api.post<PublicTestLink>(`/sets/${setId}/share`, {}),
 
   createPublicTestLink: (setId: string) =>
-    api.post<PublicTestLink>(`/sets/${setId}/share`),
+    desktopLocalCore.isAvailable()
+      ? desktopLocalCore.createSharedSetLink(setId)
+      : api.post<PublicTestLink>(`/sets/${setId}/share`, {}),
 
   getPublicTestDeck: (token: string) =>
     api.get<PublicTestDeck>(`/public/tests/${token}`),

@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { desktopLocalCore } from "@/lib/local-core";
 import type { DashboardStats } from "@/types";
 
 type DashboardStatsResponse = Omit<DashboardStats, "recent_words" | "recent_sets"> & {
@@ -12,6 +13,10 @@ type DashboardStatsResponse = Omit<DashboardStats, "recent_words" | "recent_sets
 
 export const dashboardApi = {
   stats: async (): Promise<DashboardStats> => {
+    if (desktopLocalCore.isAvailable()) {
+      return desktopLocalCore.getDashboardStats();
+    }
+
     const stats = await api.get<DashboardStatsResponse>("/dashboard/stats");
 
     return {

@@ -19,7 +19,7 @@ pub struct SessionQuery {
     pub limit: Option<u32>,
 }
 
-#[derive(Serialize, FromRow, Clone)]
+#[derive(Serialize, Deserialize, FromRow, Clone)]
 pub struct ReviewCardResponse {
     pub id: String,
     pub word_id: String,
@@ -36,6 +36,14 @@ pub struct ReviewCardResponse {
     pub reps: i64,
     pub lapses: i64,
     pub last_reviewed_at: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+pub struct ShareSetUploadRequest {
+    pub set_name: Option<String>,
+    pub set_description: Option<String>,
+    #[serde(default)]
+    pub cards: Vec<ReviewCardResponse>,
 }
 
 #[derive(Serialize)]
@@ -98,6 +106,15 @@ struct PublicSetMeta {
     id: String,
     name: String,
     description: Option<String>,
+}
+
+#[derive(FromRow)]
+struct SharedDeckRow {
+    token: String,
+    set_id: String,
+    set_name: String,
+    set_description: Option<String>,
+    cards_json: String,
 }
 
 pub async fn start_session(
@@ -249,7 +266,12 @@ pub async fn session_summary(
 pub async fn create_public_set_test_link(
     State(state): State<AppState>,
     Path(id): Path<String>,
+    Json(payload): Json<ShareSetUploadRequest>,
 ) -> Result<Json<PublicTestLinkResponse>> {
+    if !payload.cards.is_empty() {
+        return create_uploaded_public_set_test_link(state, id, payload).await;
+    }
+
     let set = load_public_set_meta(state.db.as_ref(), &id)
         .await?
         .ok_or_else(|| AppError::NotFound(format!("Set '{id}' not found")))?;
@@ -286,10 +308,74 @@ pub async fn create_public_set_test_link(
     }))
 }
 
+async fn create_uploaded_public_set_test_link(
+    state: AppState,
+    id: String,
+    payload: ShareSetUploadRequest,
+) -> Result<Json<PublicTestLinkResponse>> {
+    let set_name = payload
+        .set_name
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| "Shared study set".to_string());
+    let cards_json = serde_json::to_string(&payload.cards)
+        .map_err(|e| AppError::Internal(format!("Failed to serialize shared deck: {e}")))?;
+
+    let token =
+        sqlx::query_scalar::<_, String>("SELECT token FROM shared_test_decks WHERE set_id = $1")
+            .bind(&id)
+            .fetch_optional(state.db.as_ref())
+            .await?
+            .unwrap_or_else(|| Uuid::new_v4().simple().to_string());
+
+    sqlx::query(
+        "INSERT INTO shared_test_decks
+            (token, set_id, set_name, set_description, cards_json, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT(set_id) DO UPDATE SET
+            token = EXCLUDED.token,
+            set_name = EXCLUDED.set_name,
+            set_description = EXCLUDED.set_description,
+            cards_json = EXCLUDED.cards_json,
+            updated_at = EXCLUDED.updated_at",
+    )
+    .bind(&token)
+    .bind(&id)
+    .bind(&set_name)
+    .bind(payload.set_description)
+    .bind(cards_json)
+    .bind(utc_now_string())
+    .execute(state.db.as_ref())
+    .await?;
+
+    Ok(Json(PublicTestLinkResponse {
+        token: token.clone(),
+        set_id: id,
+        set_name,
+        cards_count: payload.cards.len() as i64,
+        api_path: format!("/api/public/tests/{token}"),
+        web_path: format!("/#/public/tests/{token}"),
+    }))
+}
+
 pub async fn public_test_deck(
     State(state): State<AppState>,
     Path(token): Path<String>,
 ) -> Result<Json<PublicTestDeckResponse>> {
+    if let Some(shared) = load_shared_public_deck(state.db.as_ref(), &token).await? {
+        let cards: Vec<ReviewCardResponse> = serde_json::from_str(&shared.cards_json)
+            .map_err(|e| AppError::Internal(format!("Failed to read shared deck payload: {e}")))?;
+
+        return Ok(Json(PublicTestDeckResponse {
+            token: shared.token,
+            set_id: shared.set_id,
+            set_name: shared.set_name,
+            set_description: shared.set_description,
+            total: cards.len(),
+            cards,
+        }));
+    }
+
     let set = sqlx::query_as::<_, PublicSetMeta>(
         "SELECT s.id, s.name, s.description
          FROM public_test_links ptl
@@ -554,6 +640,17 @@ async fn count_cards_for_set(pool: &sqlx::PgPool, set_id: &str) -> Result<i64> {
     )
     .bind(set_id)
     .fetch_one(pool)
+    .await?)
+}
+
+async fn load_shared_public_deck(pool: &sqlx::PgPool, token: &str) -> Result<Option<SharedDeckRow>> {
+    Ok(sqlx::query_as::<_, SharedDeckRow>(
+        "SELECT token, set_id, set_name, set_description, cards_json
+         FROM shared_test_decks
+         WHERE token = $1",
+    )
+    .bind(token)
+    .fetch_optional(pool)
     .await?)
 }
 

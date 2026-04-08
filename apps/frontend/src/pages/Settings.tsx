@@ -109,12 +109,12 @@ export default function Settings() {
       qc.invalidateQueries();
       toast.success(
         runtime.persistedBackendUrl
-          ? "Desktop backend URL saved to local SQLite storage"
-          : "Desktop backend URL reset to the local default"
+          ? "Desktop cloud URL saved to local SQLite storage"
+          : "Desktop cloud URL cleared"
       );
     },
     onError: (error) => {
-      toast.error(getErrorMessage(error, "Failed to persist the desktop backend URL"));
+      toast.error(getErrorMessage(error, "Failed to persist the desktop cloud URL"));
     },
   });
 
@@ -374,18 +374,18 @@ export default function Settings() {
                 />
                 <ReadonlySetting
                   icon={<SettingsIcon className="h-4 w-4" />}
-                  label="Backend mode"
+                  label="Study runtime"
                   description={
-                    nativeRuntime.managesBackend
-                      ? "Desktop booted and manages the local backend process."
-                      : "Desktop is attached to an already running backend URL."
+                    nativeRuntime.backendUrl
+                      ? "Core study flows run locally. The remote endpoint is only used for auth, sharing, and public links."
+                      : "Everything important runs locally in the desktop shell. Cloud features stay disabled until you configure an endpoint."
                   }
-                  value={nativeRuntime.managesBackend ? "Managed" : "External"}
+                  value={nativeRuntime.backendUrl ? "Hybrid" : "Local-first"}
                 />
                 <ReadonlySetting
                   icon={<Volume2 className="h-4 w-4" />}
-                  label="Backend status"
-                  description="Current reachability according to the desktop shell."
+                  label="Cloud status"
+                  description="Current reachability for optional remote features."
                   value={getBackendStatusLabel(nativeRuntime)}
                 />
                 <ReadonlySetting
@@ -407,25 +407,28 @@ export default function Settings() {
                     Endpoint wiring
                   </div>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    These values come from the native C++ shell, not from the backend API.
+                    These values come from the native C++ shell, not from the local study engine.
                   </p>
                 </div>
 
                 <div className="grid gap-3 lg:grid-cols-2">
                   <EndpointTile label="Frontend URL" value={nativeRuntime.frontendUrl} />
-                  <EndpointTile label="Backend URL" value={nativeRuntime.backendUrl} />
+                  <EndpointTile
+                    label="Cloud backend URL"
+                    value={nativeRuntime.backendUrl || "Not configured"}
+                  />
                 </div>
               </div>
 
               <div className="panel-muted space-y-4">
                 <div>
                   <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Desktop backend override
+                    Desktop cloud endpoint
                   </div>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    This value is stored by the C++ shell in a local SQLite file and
-                    loaded again on the next desktop launch. Leave it blank to fall
-                    back to the default local backend.
+                    This optional URL is stored by the C++ shell in local SQLite storage.
+                    Use it for remote auth, shared links, and public decks. Leave it
+                    blank if you want the desktop app to stay fully local.
                   </p>
                 </div>
 
@@ -442,7 +445,7 @@ export default function Settings() {
                     onClick={() => nativeBackendMutation.mutate(desktopBackendUrl)}
                     loading={nativeBackendMutation.isPending}
                   >
-                    Save backend URL
+                    Save cloud URL
                   </Button>
                   <Button
                     variant="secondary"
@@ -452,7 +455,7 @@ export default function Settings() {
                       nativeBackendMutation.mutate("");
                     }}
                   >
-                    Reset to local default
+                    Clear cloud URL
                   </Button>
                 </div>
 
@@ -692,6 +695,10 @@ function formatPlatform(platform: NativeRuntimeInfo["platform"]) {
 }
 
 function getBackendStatusLabel(runtime: NativeRuntimeInfo) {
+  if (!runtime.backendUrl) {
+    return "Not configured";
+  }
+
   if (!runtime.backendCheckable) {
     return "Remote";
   }
