@@ -1,18 +1,11 @@
-.PHONY: dev backend frontend setup
+.PHONY: dev setup build
 
 dev:
-	@trap 'kill 0' INT; \
-	(cd backend && cargo run) & \
-	(sleep 2 && cd frontend && trunk serve) & \
-	wait
-
-backend:
-	cd backend && cargo run
-
-frontend:
-	cd frontend && trunk serve
+	npm run dev
 
 setup:
-	@cp -n .env.example .env 2>/dev/null && echo "Created .env — fill in DATABASE_URL and JWT_SECRET" || echo ".env already exists"
-	rustup target add wasm32-unknown-unknown
-	cargo install trunk 2>/dev/null || true
+	cp -n .env.example .env.local 2>/dev/null || true
+	npm install
+
+build:
+	npm run build
