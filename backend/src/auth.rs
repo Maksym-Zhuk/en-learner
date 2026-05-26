@@ -4,7 +4,6 @@ use axum::{
     http::{Request, StatusCode},
     middleware::Next,
     response::Response,
-    Extension,
 };
 use axum_extra::extract::CookieJar;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};

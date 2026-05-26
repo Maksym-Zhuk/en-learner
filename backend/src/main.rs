@@ -1,6 +1,6 @@
-use axum::{Router, middleware};
+use axum::{Router, middleware, http::{HeaderName, HeaderValue, Method}};
 use std::net::SocketAddr;
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 mod auth;
@@ -25,9 +25,13 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|_| "http://localhost:8080".to_string());
 
     let cors = CorsLayer::new()
-        .allow_origin(frontend_url.parse::<axum::http::HeaderValue>().unwrap())
-        .allow_methods(Any)
-        .allow_headers(Any)
+        .allow_origin(frontend_url.parse::<HeaderValue>().unwrap())
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers([
+            HeaderName::from_static("content-type"),
+            HeaderName::from_static("authorization"),
+            HeaderName::from_static("cookie"),
+        ])
         .allow_credentials(true);
 
     let public_routes = Router::new()

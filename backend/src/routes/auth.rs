@@ -105,9 +105,10 @@ async fn login(
 }
 
 async fn logout() -> impl IntoResponse {
-    let mut cookie = Cookie::named("auth_token");
-    cookie.set_path("/");
-    cookie.set_max_age(Duration::ZERO);
+    let cookie = Cookie::build("auth_token")
+        .path("/")
+        .max_age(Duration::ZERO)
+        .build();
     let jar = CookieJar::new().add(cookie);
     (jar, Json(json!({"message": "Logged out"})))
 }
