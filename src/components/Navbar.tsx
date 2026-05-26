@@ -44,7 +44,9 @@ export default function Navbar() {
 
       <div className="navbar-right">
         {email && (
-          <span className="navbar-email">{email}</span>
+          <Link href="/account" className="navbar-email" style={{ cursor: 'pointer' }} title="Мій акаунт">
+            {email}
+          </Link>
         )}
         <button className="btn-ghost" onClick={handleLogout} style={{ fontSize: '0.8125rem' }}>
           Вийти

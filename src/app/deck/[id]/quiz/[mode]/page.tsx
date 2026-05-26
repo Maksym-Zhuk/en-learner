@@ -110,14 +110,16 @@ function MultipleChoice({
   const [options, setOptions] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [correct, setCorrect] = useState(0)
+  const firstAttemptIds = useRef(new Set<string>())
 
   const card = queue[idx]
 
   useEffect(() => {
     if (!card) return
-    const distractors = shuffle(cards.filter((c) => c.id !== card.id))
-      .slice(0, 3)
-      .map((c) => c.translation_uk)
+    const pool = Array.from(new Set(cards.map((c) => c.translation_uk))).filter(
+      (t) => t !== card.translation_uk
+    )
+    const distractors = shuffle(pool).slice(0, 3)
     setOptions(shuffle([card.translation_uk, ...distractors]))
     setSelected(null)
   }, [idx, queue])
@@ -126,38 +128,34 @@ function MultipleChoice({
     if (selected) return
     setSelected(opt)
     const isCorrect = opt === card.translation_uk
+    const isFirstAttempt = !firstAttemptIds.current.has(card.id)
+    firstAttemptIds.current.add(card.id)
 
     setTimeout(() => {
-      if (isCorrect) {
-        const newCorrect = correct + 1
+      let newCorrect = correct
+      if (isCorrect && isFirstAttempt) {
+        newCorrect = correct + 1
         setCorrect(newCorrect)
-        if (idx + 1 >= queue.length) {
-          onFinish(newCorrect, cards.length)
-        } else {
-          setIdx((i) => i + 1)
-        }
+      }
+      // Recycle wrong card to the end so it gets retried
+      const nextQueue = isCorrect ? queue : [...queue, card]
+      if (!isCorrect) setQueue(nextQueue)
+
+      if (idx + 1 >= nextQueue.length) {
+        onFinish(newCorrect, cards.length)
       } else {
-        // Recycle wrong card to end
-        setQueue((q) => {
-          const next = [...q]
-          next.push(next[idx])
-          return next
-        })
-        if (idx + 1 >= queue.length) {
-          onFinish(correct, cards.length)
-        } else {
-          setIdx((i) => i + 1)
-        }
+        setIdx((i) => i + 1)
       }
     }, 900)
   }
 
-  const progress = (idx / (queue.length)) * 100
+  const answered = firstAttemptIds.current.size
+  const progress = (answered / cards.length) * 100
 
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-        <span>{idx + 1} / {queue.length}</span>
+        <span>{Math.min(answered + 1, cards.length)} / {cards.length}</span>
         <span>✓ {correct}</span>
       </div>
 
@@ -209,6 +207,7 @@ function WriteMode({
   const [correct, setCorrect] = useState(0)
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const firstAttemptIds = useRef(new Set<string>())
 
   const card = queue[idx]
 
@@ -223,11 +222,16 @@ function WriteMode({
     const answer = normalise(input)
     const expected = normalise(card.translation_uk)
     const isCorrect = levenshtein(answer, expected) <= 2
+    const isFirstAttempt = !firstAttemptIds.current.has(card.id)
+    firstAttemptIds.current.add(card.id)
 
     if (isCorrect) {
       setFeedback('correct')
-      const newCorrect = correct + 1
-      setCorrect(newCorrect)
+      let newCorrect = correct
+      if (isFirstAttempt) {
+        newCorrect = correct + 1
+        setCorrect(newCorrect)
+      }
       setTimeout(() => {
         setFeedback(null)
         setInput('')
@@ -241,17 +245,14 @@ function WriteMode({
     } else {
       setFeedback('wrong')
       setCorrectAnswer(card.translation_uk)
-      // Recycle wrong card
+      // Recycle wrong card to the end so it gets retried
+      const nextQueue = [...queue, card]
       setTimeout(() => {
-        setQueue((q) => {
-          const next = [...q]
-          next.push(next[idx])
-          return next
-        })
+        setQueue(nextQueue)
         setFeedback(null)
         setInput('')
         setCorrectAnswer(null)
-        if (idx + 1 >= queue.length) {
+        if (idx + 1 >= nextQueue.length) {
           onFinish(correct, cards.length)
         } else {
           setIdx((i) => i + 1)
@@ -260,12 +261,13 @@ function WriteMode({
     }
   }
 
-  const progress = (idx / queue.length) * 100
+  const answered = firstAttemptIds.current.size
+  const progress = (answered / cards.length) * 100
 
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-        <span>{idx + 1} / {queue.length}</span>
+        <span>{Math.min(answered + 1, cards.length)} / {cards.length}</span>
         <span>✓ {correct}</span>
       </div>
 
@@ -428,7 +430,7 @@ function MatchMode({
     }
   }
 
-  const progress = batchStart / shuffledCards.current.length * 100
+  const progress = totalCorrect / shuffledCards.current.length * 100
   const words = items.filter((i) => i.type === 'word')
   const translations = items.filter((i) => i.type === 'translation')
 
