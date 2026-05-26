@@ -1,41 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
-import sql from '@/lib/db'
+import { db } from '@/lib/db'
+import { cards, decks } from '@/lib/schema'
+import { eq, and } from 'drizzle-orm'
 import { getUser } from '@/lib/auth'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = getUser(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Неавторизовано' }, { status: 401 })
-  }
+  if (!user) return NextResponse.json({ error: 'Неавторизовано' }, { status: 401 })
+
+  const { id } = await params
 
   try {
-    const { word, definition_en, example_en, translation_uk, example_uk } = await request.json()
+    const [existing] = await db
+      .select({ id: cards.id })
+      .from(cards)
+      .innerJoin(decks, eq(decks.id, cards.deck_id))
+      .where(and(eq(cards.id, id), eq(decks.user_id, user.userId)))
+      .limit(1)
 
-    // Verify ownership via join
-    const [existing] = await sql`
-      SELECT c.id FROM cards c
-      JOIN decks d ON d.id = c.deck_id
-      WHERE c.id = ${params.id} AND d.user_id = ${user.userId}
-    `
+    if (!existing) return NextResponse.json({ error: 'Картка не знайдена' }, { status: 404 })
 
-    if (!existing) {
-      return NextResponse.json({ error: 'Картка не знайдена' }, { status: 404 })
+    const body = await request.json()
+    const updates: Partial<typeof cards.$inferInsert> = {}
+    if (body.word?.trim())           updates.word = body.word.trim()
+    if (body.definition_en?.trim())  updates.definition_en = body.definition_en.trim()
+    if (body.example_en !== undefined)   updates.example_en = (body.example_en || '').trim()
+    if (body.translation_uk?.trim()) updates.translation_uk = body.translation_uk.trim()
+    if (body.example_uk !== undefined)   updates.example_uk = (body.example_uk || '').trim()
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'Немає полів для оновлення' }, { status: 400 })
     }
 
-    const [card] = await sql`
-      UPDATE cards
-      SET
-        word = COALESCE(${word?.trim() ?? null}, word),
-        definition_en = COALESCE(${definition_en?.trim() ?? null}, definition_en),
-        example_en = COALESCE(${example_en?.trim() ?? null}, example_en),
-        translation_uk = COALESCE(${translation_uk?.trim() ?? null}, translation_uk),
-        example_uk = COALESCE(${example_uk?.trim() ?? null}, example_uk)
-      WHERE id = ${params.id}
-      RETURNING id, deck_id, word, definition_en, example_en, translation_uk, example_uk, created_at
-    `
+    const [card] = await db
+      .update(cards)
+      .set(updates)
+      .where(eq(cards.id, id))
+      .returning()
 
     return NextResponse.json(card)
   } catch (error) {
@@ -46,25 +50,24 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = getUser(request)
-  if (!user) {
-    return NextResponse.json({ error: 'Неавторизовано' }, { status: 401 })
-  }
+  if (!user) return NextResponse.json({ error: 'Неавторизовано' }, { status: 401 })
+
+  const { id } = await params
 
   try {
-    const result = await sql`
-      DELETE FROM cards c
-      USING decks d
-      WHERE c.deck_id = d.id
-        AND c.id = ${params.id}
-        AND d.user_id = ${user.userId}
-    `
+    const [existing] = await db
+      .select({ id: cards.id })
+      .from(cards)
+      .innerJoin(decks, eq(decks.id, cards.deck_id))
+      .where(and(eq(cards.id, id), eq(decks.user_id, user.userId)))
+      .limit(1)
 
-    if (result.count === 0) {
-      return NextResponse.json({ error: 'Картка не знайдена' }, { status: 404 })
-    }
+    if (!existing) return NextResponse.json({ error: 'Картка не знайдена' }, { status: 404 })
+
+    await db.delete(cards).where(eq(cards.id, id))
 
     return NextResponse.json({ ok: true })
   } catch (error) {

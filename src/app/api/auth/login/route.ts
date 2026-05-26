@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import sql from '@/lib/db'
+import { db } from '@/lib/db'
+import { users } from '@/lib/schema'
+import { eq } from 'drizzle-orm'
 import { signToken, COOKIE_NAME, USER_INFO_COOKIE } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
@@ -11,9 +13,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email та пароль обовʼязкові' }, { status: 400 })
     }
 
-    const [user] = await sql`
-      SELECT id, email, password_hash FROM users WHERE email = ${email.toLowerCase()}
-    `
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1)
 
     if (!user) {
       return NextResponse.json({ error: 'Невірний email або пароль' }, { status: 401 })
