@@ -5,10 +5,19 @@ export interface User {
   created_at: string
 }
 
+export interface Folder {
+  id: string
+  user_id: string
+  name: string
+  created_at: string
+}
+
 export interface Deck {
   id: string
   user_id: string
   name: string
+  folder_id: string | null
+  share_token: string | null
   created_at: string
 }
 
