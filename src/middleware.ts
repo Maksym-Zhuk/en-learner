@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_NAME } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/register', '/api/auth/login', '/api/auth/register', '/api/auth/logout']
+const PUBLIC_PATHS = ['/login', '/register', '/api/auth/login', '/api/auth/register', '/api/auth/logout', '/s/', '/api/s/']
 
 /**
  * Lightweight JWT check for the Edge Runtime.
@@ -40,7 +40,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.includes('.')
+    /\.(?:ico|png|jpg|jpeg|svg|gif|webp|css|js|map|woff2?|ttf|txt|json)$/i.test(pathname)
   ) {
     return NextResponse.next()
   }
