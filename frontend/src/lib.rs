@@ -3,6 +3,7 @@ mod components;
 mod pages;
 mod state;
 
+use wasm_bindgen::prelude::wasm_bindgen;
 use leptos::*;
 use leptos_router::*;
 
@@ -37,6 +38,7 @@ fn App() -> impl IntoView {
     }
 }
 
+#[wasm_bindgen(start)]
 pub fn main() {
     console_error_panic_hook::set_once();
     mount_to_body(|| view! { <App/> });
