@@ -36,12 +36,26 @@ export interface Card {
   created_at: string
 }
 
+export interface DefinitionOption {
+  pos: string
+  definition: string
+  example: string
+}
+
+export interface ExampleOption {
+  en: string
+  uk: string
+}
+
 export interface LookupResult {
   word: string
   definition_en: string
   example_en: string
   translation_uk: string
   example_uk: string
+  translations_uk?: Record<string, string[]>
+  definitions_en?: DefinitionOption[]
+  examples?: ExampleOption[]
 }
 
 export interface AuthResponse {
