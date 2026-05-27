@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { decks, cards } from '@/lib/schema'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { getUser } from '@/lib/auth'
 
 export async function GET(
@@ -14,13 +14,31 @@ export async function GET(
   const { id } = await params
 
   try {
-    const [deck] = await db
+    const [owned] = await db
       .select({ id: decks.id })
       .from(decks)
       .where(and(eq(decks.id, id), eq(decks.user_id, user.userId)))
       .limit(1)
 
-    if (!deck) return NextResponse.json({ error: 'Колода не знайдена' }, { status: 404 })
+    if (!owned) {
+      // Allow access via group membership
+      const access = (await db.execute(sql`
+        SELECT 1 FROM decks d
+        WHERE d.id = ${id} AND (
+          EXISTS (
+            SELECT 1 FROM group_shares gs
+            JOIN group_members gm ON gm.group_id = gs.group_id
+            WHERE gs.deck_id = d.id AND gm.user_id = ${user.userId}
+          ) OR EXISTS (
+            SELECT 1 FROM group_shares gs
+            JOIN group_members gm ON gm.group_id = gs.group_id
+            WHERE gs.folder_id = d.folder_id AND d.folder_id IS NOT NULL AND gm.user_id = ${user.userId}
+          )
+        )
+        LIMIT 1
+      `)) as unknown as unknown[]
+      if (!access.length) return NextResponse.json({ error: 'Колода не знайдена' }, { status: 404 })
+    }
 
     const rows = await db
       .select()

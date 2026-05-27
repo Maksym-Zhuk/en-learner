@@ -29,9 +29,31 @@ export async function GET(
       .where(and(eq(decks.id, id), eq(decks.user_id, user.userId)))
       .groupBy(decks.id)
 
-    if (!deck) return NextResponse.json({ error: 'Колода не знайдена' }, { status: 404 })
+    if (deck) return NextResponse.json({ ...deck, readonly: false })
 
-    return NextResponse.json(deck)
+    // Check if accessible via group membership (deck shared directly or via folder)
+    const shared = (await db.execute(sql`
+      SELECT d.id, d.user_id, d.name, d.folder_id, d.share_token, d.created_at,
+             COUNT(c.id)::int AS card_count
+      FROM decks d
+      LEFT JOIN cards c ON c.deck_id = d.id
+      WHERE d.id = ${id} AND (
+        EXISTS (
+          SELECT 1 FROM group_shares gs
+          JOIN group_members gm ON gm.group_id = gs.group_id
+          WHERE gs.deck_id = d.id AND gm.user_id = ${user.userId}
+        ) OR EXISTS (
+          SELECT 1 FROM group_shares gs
+          JOIN group_members gm ON gm.group_id = gs.group_id
+          WHERE gs.folder_id = d.folder_id AND d.folder_id IS NOT NULL AND gm.user_id = ${user.userId}
+        )
+      )
+      GROUP BY d.id
+      LIMIT 1
+    `)) as unknown as Record<string, unknown>[]
+
+    if (!shared.length) return NextResponse.json({ error: 'Колода не знайдена' }, { status: 404 })
+    return NextResponse.json({ ...shared[0], readonly: true })
   } catch (error) {
     console.error('GET /api/decks/[id] error:', error)
     return NextResponse.json({ error: 'Внутрішня помилка сервера' }, { status: 500 })

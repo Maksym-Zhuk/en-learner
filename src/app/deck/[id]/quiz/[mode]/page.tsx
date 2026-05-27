@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import Navbar from '@/components/Navbar'
 import { useToast } from '@/components/ToastProvider'
 import { Card } from '@/lib/types'
 
-// ─── Helpers ─────────────────────────────────────────────────
+type BackMode = 'ua' | 'def'
+type QuizMode = 'multiple' | 'write' | 'match'
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -16,248 +16,167 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a
 }
-
-/** Levenshtein distance */
 function levenshtein(a: string, b: string): number {
-  const m = a.length
-  const n = b.length
+  const m = a.length, n = b.length
   const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  )
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1]
-          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])
-    }
-  }
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)))
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1])
   return dp[m][n]
 }
+const norm = (s: string) => s.trim().toLowerCase()
+const answerOf = (c: Card, mode: BackMode) => (mode === 'ua' ? c.translation_uk : c.definition_en)
 
-function normalise(s: string) {
-  return s.trim().toLowerCase()
-}
-
-// ─── Summary ─────────────────────────────────────────────────
-
-interface SummaryProps {
-  correct: number
-  total: number
-  onRestart: () => void
-  onBack: () => void
-}
-
-function Summary({ correct, total, onRestart, onBack }: SummaryProps) {
-  const pct = total > 0 ? correct / total : 0
-  const r = 52
-  const circ = 2 * Math.PI * r
-  const offset = circ * (1 - pct)
-
+// ─── Score ring summary ───────────────────────────────
+function Summary({ correct, total, onRestart, onBack }: { correct: number; total: number; onRestart: () => void; onBack: () => void }) {
+  const score = total > 0 ? Math.round(correct / total * 100) : 0
+  const r = 68, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100)
   return (
-    <div className="summary-card animate-scaleIn" style={{ marginTop: '2rem' }}>
-      <h2 className="summary-title">🏆 Результат тесту</h2>
-      <div className="ring-container">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r={r} fill="none" stroke="var(--surface2)" strokeWidth="10" />
-          <circle
-            cx="70" cy="70" r={r} fill="none"
-            stroke={pct >= 0.7 ? 'var(--success)' : pct >= 0.4 ? 'var(--warning)' : 'var(--danger)'}
-            strokeWidth="10" strokeLinecap="round"
-            strokeDasharray={circ} strokeDashoffset={offset}
-            transform="rotate(-90 70 70)"
-            style={{ transition: 'stroke-dashoffset 1s ease' }}
-          />
-          <text x="70" y="65" className="ring-text">{Math.round(pct * 100)}%</text>
-          <text x="70" y="84" className="ring-label">точність</text>
+    <div className="px-6 py-[60px] text-center max-w-[600px] mx-auto">
+      <div className="relative inline-flex items-center justify-center mb-6">
+        <svg width="180" height="180">
+          <circle cx="90" cy="90" r={r} fill="none" stroke="var(--bg-subtle)" strokeWidth="12" />
+          <circle cx="90" cy="90" r={r} fill="none" stroke="var(--accent)" strokeWidth="12" strokeLinecap="round"
+            strokeDasharray={circ} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1s ease' }} />
         </svg>
-      </div>
-
-      <div className="summary-stats">
-        <div className="stat-item">
-          <span className="stat-number correct">{correct}</span>
-          <span className="stat-label">Правильно</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number wrong">{total - correct}</span>
-          <span className="stat-label">Неправильно</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-number" style={{ color: 'var(--accent)' }}>{total}</span>
-          <span className="stat-label">Всього</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[32px] font-bold text-text-primary">{score}%</span>
+          <small className="text-[12px] text-text-muted">точність</small>
         </div>
       </div>
-
-      <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-        <button className="btn-outline" onClick={onRestart}>🔄 Ще раз</button>
-        <button className="btn-ghost" onClick={onBack}>До колоди</button>
+      <h2 className="text-[22px] font-semibold text-text-primary mb-2">Результат тесту</h2>
+      <p className="text-text-secondary text-[14px] mb-6">Правильних відповідей з першої спроби: {correct} з {total}.</p>
+      <div className="grid grid-cols-3 gap-3 mx-auto mb-7 max-w-[480px]">
+        <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
+          <div className="text-[22px] font-bold text-success">{correct}</div>
+          <div className="text-[12px] text-text-muted mt-1">Правильно</div>
+        </div>
+        <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
+          <div className="text-[22px] font-bold text-danger">{total - correct}</div>
+          <div className="text-[12px] text-text-muted mt-1">Помилки</div>
+        </div>
+        <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
+          <div className="text-[22px] font-bold text-text-primary">{total}</div>
+          <div className="text-[12px] text-text-muted mt-1">Всього</div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={onBack}>До колоди</button>
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={onRestart}><i className="ti ti-refresh" /> Ще раз</button>
       </div>
     </div>
   )
 }
 
-// ─── Multiple Choice ──────────────────────────────────────────
-
-function MultipleChoice({
-  cards,
-  onFinish,
-}: {
-  cards: Card[]
-  onFinish: (correct: number, total: number) => void
-}) {
+// ─── Multiple choice ──────────────────────────────────
+function MultipleChoice({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
   const [queue, setQueue] = useState<Card[]>(() => shuffle(cards))
   const [idx, setIdx] = useState(0)
   const [options, setOptions] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [correct, setCorrect] = useState(0)
   const firstAttemptIds = useRef(new Set<string>())
-
   const card = queue[idx]
 
   useEffect(() => {
     if (!card) return
-    const pool = Array.from(new Set(cards.map((c) => c.translation_uk))).filter(
-      (t) => t !== card.translation_uk
-    )
-    const distractors = shuffle(pool).slice(0, 3)
-    setOptions(shuffle([card.translation_uk, ...distractors]))
+    const right = answerOf(card, mode)
+    const pool = Array.from(new Set(cards.map((c) => answerOf(c, mode)))).filter((t) => t !== right)
+    setOptions(shuffle([right, ...shuffle(pool).slice(0, 3)]))
     setSelected(null)
   }, [idx, queue])
 
   function handleSelect(opt: string) {
     if (selected) return
     setSelected(opt)
-    const isCorrect = opt === card.translation_uk
-    const isFirstAttempt = !firstAttemptIds.current.has(card.id)
+    const right = answerOf(card, mode)
+    const isCorrect = opt === right
+    const first = !firstAttemptIds.current.has(card.id)
     firstAttemptIds.current.add(card.id)
-
     setTimeout(() => {
-      let newCorrect = correct
-      if (isCorrect && isFirstAttempt) {
-        newCorrect = correct + 1
-        setCorrect(newCorrect)
-      }
-      // Recycle wrong card to the end so it gets retried
+      let nc = correct
+      if (isCorrect && first) { nc = correct + 1; setCorrect(nc) }
       const nextQueue = isCorrect ? queue : [...queue, card]
       if (!isCorrect) setQueue(nextQueue)
-
-      if (idx + 1 >= nextQueue.length) {
-        onFinish(newCorrect, cards.length)
-      } else {
-        setIdx((i) => i + 1)
-      }
-    }, 900)
+      if (idx + 1 >= nextQueue.length) onFinish(nc, cards.length)
+      else setIdx((i) => i + 1)
+    }, 800)
   }
 
   const answered = firstAttemptIds.current.size
   const progress = (answered / cards.length) * 100
+  const right = answerOf(card, mode)
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-        <span>{Math.min(answered + 1, cards.length)} / {cards.length}</span>
-        <span>✓ {correct}</span>
-      </div>
-
-      <div className="progress-bar-track">
-        <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <div className="quiz-card">
-        <p className="quiz-question">{card.word}</p>
-        {card.example_en && <p className="quiz-question-sub">&ldquo;{card.example_en}&rdquo;</p>}
-      </div>
-
-      <div className="options-grid">
-        {options.map((opt) => {
-          let cls = 'option-btn'
-          if (selected) {
-            if (opt === card.translation_uk) cls += ' correct'
-            else if (opt === selected) cls += ' wrong'
-          }
-          return (
-            <button
-              key={opt}
-              className={cls}
-              onClick={() => handleSelect(opt)}
-              disabled={!!selected}
-            >
-              {opt}
-            </button>
-          )
-        })}
+      <StudyHeaderlessProgress progress={progress} />
+      <div className="flex-1 px-6 py-12 flex flex-col items-center">
+        <div className="w-full max-w-[560px]">
+          <div className="text-[13px] text-text-muted mb-2">{mode === 'ua' ? 'Що означає це слово?' : 'Оберіть визначення'}</div>
+          <div className="text-[28px] font-semibold text-text-primary mb-2">{card.word}</div>
+          {card.example_en && <div className="text-[14px] text-text-secondary italic mb-6">{card.example_en}</div>}
+          <div className="grid grid-cols-1 gap-3">
+            {options.map((opt, i) => {
+              let cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] hover:bg-bg-elevated w-full'
+              if (selected) {
+                if (opt === right) cls = 'appearance-none bg-[rgba(34,197,94,0.15)] border border-success text-success rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] w-full'
+                else if (opt === selected) cls = 'appearance-none bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] w-full [animation:shake_400ms_ease]'
+                else cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] pointer-events-none opacity-50 w-full'
+              }
+              return (
+                <button key={opt} className={cls} onClick={() => handleSelect(opt)} disabled={!!selected}>
+                  <span className="text-text-muted text-[13px]">{i + 1}</span>
+                  <span className="flex-1">{opt}</span>
+                  <span className="opacity-0 data-[show]:opacity-100"><i className={`ti ${opt === right ? 'ti-check' : 'ti-x'}`} /></span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </>
   )
 }
 
-// ─── Write Mode ───────────────────────────────────────────────
-
-function WriteMode({
-  cards,
-  onFinish,
-}: {
-  cards: Card[]
-  onFinish: (correct: number, total: number) => void
-}) {
+// ─── Write mode ───────────────────────────────────────
+function WriteMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
   const [queue, setQueue] = useState<Card[]>(() => shuffle(cards))
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null)
+  const [reveal, setReveal] = useState<string | null>(null)
   const [correct, setCorrect] = useState(0)
-  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const firstAttemptIds = useRef(new Set<string>())
-
   const card = queue[idx]
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [idx])
+  useEffect(() => { inputRef.current?.focus() }, [idx])
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (feedback) return
-
-    const answer = normalise(input)
-    const expected = normalise(card.translation_uk)
-    const isCorrect = levenshtein(answer, expected) <= 2
-    const isFirstAttempt = !firstAttemptIds.current.has(card.id)
+    const expected = norm(answerOf(card, mode))
+    const isCorrect = levenshtein(norm(input), expected) <= 2
+    const first = !firstAttemptIds.current.has(card.id)
     firstAttemptIds.current.add(card.id)
-
     if (isCorrect) {
       setFeedback('correct')
-      let newCorrect = correct
-      if (isFirstAttempt) {
-        newCorrect = correct + 1
-        setCorrect(newCorrect)
-      }
+      let nc = correct
+      if (first) { nc = correct + 1; setCorrect(nc) }
       setTimeout(() => {
-        setFeedback(null)
-        setInput('')
-        setCorrectAnswer(null)
-        if (idx + 1 >= queue.length) {
-          onFinish(newCorrect, cards.length)
-        } else {
-          setIdx((i) => i + 1)
-        }
-      }, 900)
+        setFeedback(null); setInput(''); setReveal(null)
+        if (idx + 1 >= queue.length) onFinish(nc, cards.length)
+        else setIdx((i) => i + 1)
+      }, 850)
     } else {
-      setFeedback('wrong')
-      setCorrectAnswer(card.translation_uk)
-      // Recycle wrong card to the end so it gets retried
+      setFeedback('wrong'); setReveal(answerOf(card, mode))
       const nextQueue = [...queue, card]
       setTimeout(() => {
-        setQueue(nextQueue)
-        setFeedback(null)
-        setInput('')
-        setCorrectAnswer(null)
-        if (idx + 1 >= nextQueue.length) {
-          onFinish(correct, cards.length)
-        } else {
-          setIdx((i) => i + 1)
-        }
-      }, 1200)
+        setQueue(nextQueue); setFeedback(null); setInput(''); setReveal(null)
+        if (idx + 1 >= nextQueue.length) onFinish(correct, cards.length)
+        else setIdx((i) => i + 1)
+      }, 1400)
     }
   }
 
@@ -266,223 +185,119 @@ function WriteMode({
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-        <span>{Math.min(answered + 1, cards.length)} / {cards.length}</span>
-        <span>✓ {correct}</span>
+      <StudyHeaderlessProgress progress={progress} />
+      <div className="flex-1 px-6 py-12 flex flex-col items-center">
+        <div className="w-full max-w-[480px] text-center">
+          <div className="text-[32px] font-bold text-text-primary mb-3">{card.word}</div>
+          {card.example_en && <div className="text-[14px] text-text-secondary italic mb-8">{card.example_en}</div>}
+          <form onSubmit={handleSubmit}>
+            <div className="relative">
+              <input
+                ref={inputRef}
+                className={`w-full h-14 bg-bg-elevated border-[1.5px] rounded-[10px] text-text-primary font-[inherit] text-[18px] px-5 pr-14 outline-none text-center transition-all focus:border-accent focus:shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)] ${
+                  feedback === 'correct' ? 'border-success shadow-[0_0_0_1px_theme(colors.success),0_0_20px_rgba(34,197,94,0.15)]' :
+                  feedback === 'wrong' ? 'border-danger shadow-[0_0_0_1px_theme(colors.danger),0_0_20px_rgba(239,68,68,0.15)] [animation:shake_400ms_ease]' :
+                  'border-bg-subtle'
+                }`}
+                placeholder={mode === 'ua' ? 'Введіть переклад українською…' : 'Type the English definition…'}
+                value={input} onChange={(e) => setInput(e.target.value)} disabled={!!feedback}
+              />
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 bg-accent text-white rounded-[6px] cursor-pointer disabled:opacity-40" disabled={!input.trim() || !!feedback}><i className="ti ti-arrow-right" /></button>
+            </div>
+          </form>
+          <div className={`mt-4 text-[14px] transition-opacity ${feedback ? 'opacity-100' : 'opacity-0'}`}>
+            {feedback === 'correct' && <span className="text-success">✓ Правильно!</span>}
+            {feedback === 'wrong' && reveal && <span className="text-danger">✕ Правильна відповідь: <span className="font-semibold">{reveal}</span></span>}
+          </div>
+          <div className="mt-6 text-[12px] text-text-muted"><span><kbd className="bg-bg-elevated border border-bg-subtle rounded px-1.5 py-0.5 text-[11px]">Enter</kbd> перевірити</span></div>
+        </div>
       </div>
-
-      <div className="progress-bar-track">
-        <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <div className="quiz-card">
-        <p className="quiz-question">{card.word}</p>
-        {card.example_en && <p className="quiz-question-sub">&ldquo;{card.example_en}&rdquo;</p>}
-      </div>
-
-      <form onSubmit={handleSubmit} className="write-form">
-        <input
-          ref={inputRef}
-          type="text"
-          className={`write-input${feedback ? ` ${feedback}` : ''}`}
-          placeholder="Введіть переклад українською..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={!!feedback}
-        />
-        {feedback === 'correct' && (
-          <p className="write-feedback correct">✓ Правильно!</p>
-        )}
-        {feedback === 'wrong' && correctAnswer && (
-          <p className="write-feedback wrong">✕ Правильна відповідь: {correctAnswer}</p>
-        )}
-        <button
-          type="submit"
-          className="btn-primary"
-          style={{ width: 'auto', alignSelf: 'flex-end', padding: '0.75rem 2rem' }}
-          disabled={!input.trim() || !!feedback}
-        >
-          Перевірити
-        </button>
-      </form>
     </>
   )
 }
 
-// ─── Match Mode ───────────────────────────────────────────────
-
-interface MatchPair {
-  id: string
-  word: string
-  translation: string
-}
-
-interface MatchItem {
-  id: string
-  text: string
-  type: 'word' | 'translation'
-  pairId: string
-  matched: boolean
-}
-
-function MatchMode({
-  cards,
-  onFinish,
-}: {
-  cards: Card[]
-  onFinish: (correct: number, total: number) => void
-}) {
+// ─── Match mode ───────────────────────────────────────
+interface MItem { id: string; text: string; type: 'word' | 'tr'; pairId: string; matched: boolean }
+function MatchMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
   const BATCH = 6
   const [batchStart, setBatchStart] = useState(0)
-  const [pairs, setPairs] = useState<MatchPair[]>([])
-  const [items, setItems] = useState<MatchItem[]>([])
+  const [items, setItems] = useState<MItem[]>([])
+  const [pairsCount, setPairsCount] = useState(0)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [wrongIds, setWrongIds] = useState<string[]>([])
-  const [matchedCount, setMatchedCount] = useState(0)
+  const [matched, setMatched] = useState(0)
   const [totalCorrect, setTotalCorrect] = useState(0)
-  const [totalBatches, setTotalBatches] = useState(0)
+  const all = useRef(shuffle(cards))
 
-  const shuffledCards = useRef(shuffle(cards))
-
-  useEffect(() => {
-    loadBatch(0)
-    setTotalBatches(Math.ceil(cards.length / BATCH))
-  }, [])
+  useEffect(() => { loadBatch(0) }, [])
 
   function loadBatch(start: number) {
-    const batch = shuffledCards.current.slice(start, start + BATCH)
-    const newPairs: MatchPair[] = batch.map((c) => ({
-      id: c.id,
-      word: c.word,
-      translation: c.translation_uk,
-    }))
-    setPairs(newPairs)
-
-    const words: MatchItem[] = newPairs.map((p) => ({
-      id: `w-${p.id}`,
-      text: p.word,
-      type: 'word',
-      pairId: p.id,
-      matched: false,
-    }))
-    const translations: MatchItem[] = shuffle(newPairs.map((p) => ({
-      id: `t-${p.id}`,
-      text: p.translation,
-      type: 'translation',
-      pairId: p.id,
-      matched: false,
-    })))
-
-    setItems([...words, ...translations])
-    setSelectedId(null)
-    setWrongIds([])
-    setMatchedCount(0)
+    const batch = all.current.slice(start, start + BATCH)
+    setPairsCount(batch.length)
+    const words: MItem[] = batch.map((c) => ({ id: `w-${c.id}`, text: c.word, type: 'word', pairId: c.id, matched: false }))
+    const trs: MItem[] = shuffle(batch.map((c) => ({ id: `t-${c.id}`, text: answerOf(c, mode), type: 'tr' as const, pairId: c.id, matched: false })))
+    setItems([...words, ...trs]); setSelectedId(null); setWrongIds([]); setMatched(0)
   }
 
   function handleSelect(itemId: string) {
     const item = items.find((i) => i.id === itemId)
     if (!item || item.matched || wrongIds.includes(itemId)) return
-
-    if (!selectedId) {
-      setSelectedId(itemId)
-      return
-    }
-
-    if (selectedId === itemId) {
-      setSelectedId(null)
-      return
-    }
-
+    if (!selectedId) { setSelectedId(itemId); return }
+    if (selectedId === itemId) { setSelectedId(null); return }
     const first = items.find((i) => i.id === selectedId)!
-    const second = item
-
-    if (first.pairId === second.pairId && first.type !== second.type) {
-      // Match!
-      const newItems = items.map((i) =>
-        i.pairId === first.pairId ? { ...i, matched: true } : i
-      )
-      setItems(newItems)
+    if (first.pairId === item.pairId && first.type !== item.type) {
+      setItems((prev) => prev.map((i) => i.pairId === first.pairId ? { ...i, matched: true } : i))
       setSelectedId(null)
-      const newMatched = matchedCount + 1
-      setMatchedCount(newMatched)
-      setTotalCorrect((c) => c + 1)
-
-      if (newMatched >= pairs.length) {
-        const nextStart = batchStart + BATCH
-        if (nextStart < shuffledCards.current.length) {
-          setTimeout(() => {
-            setBatchStart(nextStart)
-            loadBatch(nextStart)
-          }, 600)
-        } else {
-          setTimeout(() => {
-            onFinish(totalCorrect + 1, shuffledCards.current.length)
-          }, 600)
-        }
+      const nm = matched + 1; setMatched(nm); setTotalCorrect((c) => c + 1)
+      if (nm >= pairsCount) {
+        const next = batchStart + BATCH
+        setTimeout(() => {
+          if (next < all.current.length) { setBatchStart(next); loadBatch(next) }
+          else onFinish(totalCorrect + 1, all.current.length)
+        }, 600)
       }
     } else {
-      // Wrong
       setWrongIds([selectedId, itemId])
-      setTimeout(() => {
-        setWrongIds([])
-        setSelectedId(null)
-      }, 600)
+      setTimeout(() => { setWrongIds([]); setSelectedId(null) }, 600)
     }
   }
 
-  const progress = totalCorrect / shuffledCards.current.length * 100
-  const words = items.filter((i) => i.type === 'word')
-  const translations = items.filter((i) => i.type === 'translation')
+  const progress = totalCorrect / all.current.length * 100
+
+  const getPillClass = (i: MItem) => {
+    if (i.matched) return 'bg-bg-surface border border-bg-subtle rounded-full px-4 py-3 text-text-primary text-[15px] font-medium cursor-pointer transition-[opacity_350ms,transform_350ms] text-center select-none opacity-0 scale-0 pointer-events-none'
+    if (wrongIds.includes(i.id)) return 'bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition-all text-center select-none hover:bg-bg-elevated [animation:shake_400ms_ease]'
+    if (selectedId === i.id) return 'bg-bg-elevated border border-accent text-accent rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition-all text-center select-none shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)]'
+    return 'bg-bg-surface border border-bg-subtle rounded-full px-4 py-3 text-text-primary text-[15px] font-medium cursor-pointer transition-all text-center select-none hover:bg-bg-elevated'
+  }
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-        <span>Пара {matchedCount} / {pairs.length}</span>
-        <span>✓ {totalCorrect}</span>
-      </div>
-
-      <div className="progress-bar-track" style={{ marginBottom: '1.5rem' }}>
-        <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <div className="match-grid">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {words.map((item) => (
-            <button
-              key={item.id}
-              className={`match-item${item.matched ? ' matched' : ''}${selectedId === item.id ? ' selected' : ''}${wrongIds.includes(item.id) ? ' wrong-flash' : ''}`}
-              onClick={() => handleSelect(item.id)}
-              disabled={item.matched}
-            >
-              {item.text}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {translations.map((item) => (
-            <button
-              key={item.id}
-              className={`match-item${item.matched ? ' matched' : ''}${selectedId === item.id ? ' selected' : ''}${wrongIds.includes(item.id) ? ' wrong-flash' : ''}`}
-              onClick={() => handleSelect(item.id)}
-              disabled={item.matched}
-            >
-              {item.text}
-            </button>
-          ))}
+      <StudyHeaderlessProgress progress={progress} />
+      <div className="flex-1 px-6 py-12 flex flex-col items-center">
+        <div className="w-full max-w-[640px]">
+          <h2 className="text-[20px] font-semibold text-text-primary mb-1">З'єднай слова з {mode === 'ua' ? 'перекладами' : 'визначеннями'}</h2>
+          <div className="text-[13px] text-text-muted mb-6">Пара {matched} / {pairsCount} · всього ✓ {totalCorrect}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">{items.filter((i) => i.type === 'word').map((i) => (
+              <button key={i.id} className={getPillClass(i)} onClick={() => handleSelect(i.id)} disabled={i.matched}>{i.text}</button>))}</div>
+            <div className="flex flex-col gap-3">{items.filter((i) => i.type === 'tr').map((i) => (
+              <button key={i.id} className={getPillClass(i)} onClick={() => handleSelect(i.id)} disabled={i.matched}>{i.text}</button>))}</div>
+          </div>
         </div>
       </div>
     </>
   )
 }
 
-// ─── Main Quiz Page ───────────────────────────────────────────
-
-type QuizMode = 'multiple' | 'write' | 'match'
-
-const MODE_LABELS: Record<QuizMode, string> = {
-  multiple: '🔤 Множинний вибір',
-  write: '✍️ Письмо',
-  match: '🔗 Відповідність',
+function StudyHeaderlessProgress({ progress }: { progress: number }) {
+  return (
+    <div className="px-6 pt-3 pb-2 border-b border-bg-subtle">
+      <div className="h-1 bg-bg-elevated rounded-full overflow-hidden">
+        <span className="block h-full bg-gradient-to-r from-accent to-emerald-300 rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  )
 }
 
 export default function QuizPage() {
@@ -498,122 +313,70 @@ export default function QuizPage() {
   const [finalCorrect, setFinalCorrect] = useState(0)
   const [finalTotal, setFinalTotal] = useState(0)
   const [deckName, setDeckName] = useState('')
+  const [backMode, setBackMode] = useState<BackMode>('ua')
   const [key, setKey] = useState(0)
 
-  useEffect(() => {
-    fetchCards()
-  }, [deckId])
+  useEffect(() => { fetchCards() }, [deckId])
 
   async function fetchCards() {
     setLoading(true)
     try {
-      const [deckRes, cardsRes] = await Promise.all([
-        fetch(`/api/decks/${deckId}`),
-        fetch(`/api/decks/${deckId}/cards`),
-      ])
-
+      const [deckRes, cardsRes] = await Promise.all([fetch(`/api/decks/${deckId}`), fetch(`/api/decks/${deckId}/cards`)])
       if (deckRes.status === 401) { router.push('/login'); return }
       if (!deckRes.ok) { router.push('/home'); return }
-
       const deckData = await deckRes.json()
       setDeckName(deckData.name)
-
       const cardsData: Card[] = await cardsRes.json()
-
-      if (mode === 'multiple' && cardsData.length < 4) {
-        showToast('Потрібно мінімум 4 картки для цього режиму', 'error')
-        router.push(`/deck/${deckId}`)
-        return
-      }
-
-      if (cardsData.length < 1) {
-        showToast('У колоді немає карток', 'error')
-        router.push(`/deck/${deckId}`)
-        return
-      }
-
+      if (mode === 'multiple' && cardsData.length < 4) { showToast('Потрібно мінімум 4 картки', 'error'); router.push(`/deck/${deckId}`); return }
+      if (cardsData.length < 1) { showToast('У колоді немає карток', 'error'); router.push(`/deck/${deckId}`); return }
       setCards(cardsData)
-    } catch {
-      showToast('Помилка завантаження', 'error')
-    } finally {
-      setLoading(false)
-    }
+    } catch { showToast('Помилка завантаження', 'error') } finally { setLoading(false) }
   }
 
-  function handleFinish(correct: number, total: number) {
-    setFinalCorrect(correct)
-    setFinalTotal(total)
-    setFinished(true)
+  function handleFinish(c: number, t: number) {
+    setFinalCorrect(c); setFinalTotal(t); setFinished(true)
+    fetch('/api/sessions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deck_id: deckId, mode, correct: c, total: t }),
+    }).catch(() => {})
   }
+  function handleRestart() { setFinished(false); setKey((k) => k + 1) }
 
-  function handleRestart() {
-    setFinished(false)
-    setKey((k) => k + 1)
-  }
-
-  if (!['multiple', 'write', 'match'].includes(mode)) {
-    router.push(`/deck/${deckId}`)
-    return null
-  }
-
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '4rem' }}>
-          <span className="spinner-lg" />
-        </div>
-      </>
-    )
-  }
+  if (!['multiple', 'write', 'match'].includes(mode)) { router.push(`/deck/${deckId}`); return null }
+  if (loading) return (
+    <div className="bg-bg-base min-h-screen flex flex-col">
+      <div className="flex-1 px-6 py-12 flex flex-col items-center">
+        <div className="h-[22px] bg-gradient-to-r from-bg-subtle via-[rgba(16,185,129,0.1)] to-bg-subtle bg-[size:200%_100%] rounded mb-3.5 [animation:shimmer_1.4s_linear_infinite] w-1/2" style={{ maxWidth: 400 }} />
+      </div>
+    </div>
+  )
 
   return (
-    <>
-      <Navbar />
-      <div className="quiz-layout">
-        <button className="back-btn" onClick={() => router.push(`/deck/${deckId}`)}>
-          ← {deckName}
-        </button>
-
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', letterSpacing: '-0.02em' }}>
-          {MODE_LABELS[mode] || mode}
-        </h2>
-
-        {/* Mode selector */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-          {(['multiple', 'write', 'match'] as QuizMode[]).map((m) => (
-            <button
-              key={m}
-              className={mode === m ? 'btn-outline' : 'btn-ghost'}
-              onClick={() => router.push(`/deck/${deckId}/quiz/${m}`)}
-              style={{ fontSize: '0.8125rem' }}
-            >
-              {MODE_LABELS[m]}
-            </button>
-          ))}
+    <div className="bg-bg-base min-h-screen flex flex-col">
+      <div className="px-6 pt-3 pb-2">
+        <div className="flex items-center justify-between">
+          <a className="flex items-center gap-2 text-text-secondary text-[13px] cursor-pointer hover:text-text-primary transition-colors" onClick={() => router.push(`/deck/${deckId}`)}>
+            <i className="ti ti-arrow-left" /> <span className="font-medium">{deckName}</span>
+          </a>
+          {!finished && (
+            <div className="grid grid-cols-2 bg-bg-elevated border border-bg-subtle rounded-full p-1 relative" style={{ width: 240, marginBottom: 0 }}>
+              <div className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-accent rounded-full transition-transform duration-240 shadow-[0_4px_12px_rgba(16,185,129,0.4)] z-0" style={backMode === 'def' ? { transform: 'translateX(100%)' } : undefined} />
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'ua' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('ua'); setKey((k) => k + 1) }}>Переклад</button>
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'def' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('def'); setKey((k) => k + 1) }}>Пояснення</button>
+            </div>
+          )}
         </div>
-
-        {finished ? (
-          <Summary
-            correct={finalCorrect}
-            total={finalTotal}
-            onRestart={handleRestart}
-            onBack={() => router.push(`/deck/${deckId}`)}
-          />
-        ) : (
-          <>
-            {mode === 'multiple' && (
-              <MultipleChoice key={key} cards={cards} onFinish={handleFinish} />
-            )}
-            {mode === 'write' && (
-              <WriteMode key={key} cards={cards} onFinish={handleFinish} />
-            )}
-            {mode === 'match' && (
-              <MatchMode key={key} cards={cards} onFinish={handleFinish} />
-            )}
-          </>
-        )}
       </div>
-    </>
+
+      {finished ? (
+        <Summary correct={finalCorrect} total={finalTotal} onRestart={handleRestart} onBack={() => router.push(`/deck/${deckId}`)} />
+      ) : (
+        <>
+          {mode === 'multiple' && <MultipleChoice key={key} cards={cards} mode={backMode} onFinish={handleFinish} />}
+          {mode === 'write' && <WriteMode key={key} cards={cards} mode={backMode} onFinish={handleFinish} />}
+          {mode === 'match' && <MatchMode key={key} cards={cards} mode={backMode} onFinish={handleFinish} />}
+        </>
+      )}
+    </div>
   )
 }
