@@ -5,11 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/lib/types'
 
-interface SharedDeck {
-  id: string
-  name: string
-  created_at: string
-}
+interface SharedDeck { id: string; name: string; created_at: string }
 
 export default function SharedDeckPage() {
   const params = useParams()
@@ -26,109 +22,90 @@ export default function SharedDeckPage() {
       .then(async (res) => {
         if (!res.ok) { setNotFound(true); return }
         const data = await res.json()
-        setDeck(data.deck)
-        setCards(data.cards)
+        setDeck(data.deck); setCards(data.cards)
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [token])
 
-  function toggleCard(id: string) {
-    setFlipped((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  function toggle(id: string) {
+    setFlipped((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <span className="spinner-lg" />
+      <div className="bg-bg-base min-h-screen flex flex-col">
+        <div className="flex-1 px-6 py-12 flex flex-col items-center">
+          <div className="h-[22px] bg-gradient-to-r from-bg-subtle via-[rgba(16,185,129,0.1)] to-bg-subtle bg-[size:200%_100%] rounded mb-3.5 [animation:shimmer_1.4s_linear_infinite] w-1/2" style={{ maxWidth: 400 }} />
+        </div>
       </div>
     )
   }
 
   if (notFound || !deck) {
     return (
-      <div className="auth-page">
-        <div className="auth-card animate-scaleIn" style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
-          <h1 className="auth-title" style={{ fontSize: '1.25rem' }}>Колоду не знайдено</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-            Посилання недійсне або доступ закрито
-          </p>
-          <Link href="/login" className="btn-primary" style={{ display: 'inline-flex', marginTop: '1.5rem', textDecoration: 'none', width: 'auto', padding: '0.75rem 2rem' }}>
-            Увійти до EN Learner
-          </Link>
+      <section className="relative min-h-screen flex items-center justify-center px-6 py-12">
+        <div className="relative w-full max-w-[480px] bg-bg-surface border border-bg-subtle rounded-[24px] px-9 py-10 shadow-[0_12px_40px_rgba(0,0,0,0.5)]" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
+          <h1 className="text-[22px] font-semibold text-text-primary" style={{ margin: 0 }}>Колоду не знайдено</h1>
+          <p className="text-text-muted text-[13px] mt-2">Посилання недійсне або доступ закрито</p>
+          <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] bg-accent text-white rounded-[10px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px mt-4">Увійти до en-learner</Link>
         </div>
-      </div>
+      </section>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Header */}
-      <nav className="navbar">
-        <Link href="/login" className="navbar-logo" style={{ textDecoration: 'none' }}>
-          📚 <span>EN</span>Learner
+    <div className="min-h-screen flex flex-col">
+      <nav className="sticky top-0 z-50 flex items-center justify-between px-7 py-3.5 border-b border-bg-subtle bg-[rgba(15,17,23,0.7)] backdrop-blur-[12px]">
+        <Link href="/login" className="inline-flex items-center gap-2.5 text-text-primary font-semibold text-[18px] tracking-[-0.01em]">
+          <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-hover inline-flex items-center justify-center text-white text-sm font-semibold"><span>en</span></span>
+          <span>en-learner</span>
         </Link>
-        <Link href="/register" className="btn-ghost" style={{ fontSize: '0.8125rem', textDecoration: 'none' }}>
-          Зареєструватися
-        </Link>
+        <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-user-plus" /> Зареєструватися</Link>
       </nav>
 
-      <div className="page-container" style={{ maxWidth: '860px' }}>
-        {/* Banner */}
-        <div className="share-banner">
-          <div>
-            <p className="share-banner-label">Публічна колода</p>
-            <h1 className="share-banner-title">{deck.name}</h1>
-            <p className="share-banner-count">{cards.length} {cards.length === 1 ? 'картка' : 'карток'}</p>
+      <main className="flex-1 px-6 py-6 pb-16 max-w-[1100px] w-full mx-auto [animation:fadeIn_280ms_ease]">
+        <div className="flex items-center gap-5 mb-6">
+          <div className="text-5xl">🌐</div>
+          <div className="flex-1">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[rgba(16,185,129,0.15)] text-accent border border-[rgba(16,185,129,0.3)] mb-2"><i className="ti ti-link" style={{ fontSize: 11 }} /> Публічна колода</span>
+            <h1 className="text-[28px] font-semibold text-text-primary">{deck.name}</h1>
+            <div className="text-text-secondary text-[13px] mt-1">{cards.length} {cards.length === 1 ? 'слово' : 'слів'} · натисніть картку, щоб побачити переклад</div>
           </div>
-          <Link href="/register" className="btn-primary" style={{ textDecoration: 'none', width: 'auto', whiteSpace: 'nowrap' }}>
-            Зберегти до свого акаунту
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-bookmark" /> Зберегти собі</Link>
+          </div>
         </div>
 
-        {/* Cards */}
         {cards.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">🃏</div>
-            <p className="empty-state-title">Картки відсутні</p>
+          <div className="bg-bg-surface border border-dashed border-bg-subtle rounded-[16px] px-6 py-12 text-center">
+            <div style={{ fontSize: 40 }}>🃏</div>
+            <h3 className="text-[18px] font-medium text-text-primary mt-2">Картки відсутні</h3>
           </div>
         ) : (
-          <div className="share-cards-grid">
-            {cards.map((card) => {
-              const isFlipped = flipped.has(card.id)
+          <div className="grid grid-cols-3 gap-4 mb-2 max-md:grid-cols-2 max-sm:grid-cols-1">
+            {cards.map((c) => {
+              const isF = flipped.has(c.id)
               return (
-                <div
-                  key={card.id}
-                  className={`share-card${isFlipped ? ' share-card--flipped' : ''}`}
-                  onClick={() => toggleCard(card.id)}
-                >
-                  <div className="share-card-inner">
-                    <div className="share-card-front">
-                      <p className="share-card-word">{card.word}</p>
-                      {card.example_en && (
-                        <p className="share-card-example">&ldquo;{card.example_en}&rdquo;</p>
-                      )}
-                      <p className="share-card-hint">Натисніть щоб побачити переклад</p>
-                    </div>
-                    <div className="share-card-back">
-                      <p className="share-card-translation">{card.translation_uk}</p>
-                      {card.example_uk && (
-                        <p className="share-card-example">&ldquo;{card.example_uk}&rdquo;</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <article key={c.id} className="bg-bg-surface border border-bg-subtle rounded-[10px] p-[18px] flex flex-col gap-2.5 transition-all cursor-pointer relative hover:-translate-y-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent" onClick={() => toggle(c.id)} style={{ minHeight: 120, justifyContent: 'center' }}>
+                  {!isF ? (
+                    <>
+                      <h3 className="text-[15px] font-medium text-accent">{c.word}</h3>
+                      {c.example_en && <p className="text-[12px] text-text-secondary">{c.example_en}</p>}
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-[15px] font-medium text-text-primary">{c.translation_uk}</h3>
+                      {c.definition_en && <p className="text-[12px] text-text-secondary">{c.definition_en}</p>}
+                    </>
+                  )}
+                </article>
               )
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

@@ -65,116 +65,83 @@ export default function AccountPage() {
   }
 
   function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString('uk-UA', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    })
+    return new Date(iso).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })
   }
 
   if (loading) {
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="page-container" style={{ display: 'flex', justifyContent: 'center', paddingTop: '4rem' }}>
-          <span className="spinner-lg" />
-        </div>
-      </>
+        <main className="flex-1 px-6 py-6 pb-16 max-w-[1100px] w-full mx-auto [animation:fadeIn_280ms_ease]" style={{ display: 'flex', justifyContent: 'center', paddingTop: 64 }}>
+          <div className="h-[22px] bg-gradient-to-r from-bg-subtle via-[rgba(16,185,129,0.1)] to-bg-subtle bg-[size:200%_100%] rounded mb-3.5 [animation:shimmer_1.4s_linear_infinite] w-1/2" style={{ maxWidth: 300 }} />
+        </main>
+      </div>
     )
   }
 
   if (!profile) return null
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="page-container" style={{ maxWidth: '680px' }}>
-        <h1 className="section-title" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>
-          👤 Мій акаунт
-        </h1>
-
-        {/* Profile info */}
-        <div className="account-card">
-          <div className="account-avatar">
-            {profile.email[0].toUpperCase()}
-          </div>
+      <main className="flex-1 px-6 py-6 pb-16 w-full mx-auto [animation:fadeIn_280ms_ease]" style={{ maxWidth: 680 }}>
+        <div className="flex items-center justify-between my-6 mb-4">
           <div>
-            <p className="account-email">{profile.email}</p>
-            <p className="account-since">Зареєстровано {formatDate(profile.created_at)}</p>
+            <h1 className="text-[24px] font-semibold text-text-primary">Мій акаунт</h1>
+            <p className="text-text-secondary text-[13px] mt-1">Зареєстровано {formatDate(profile.created_at)}</p>
+          </div>
+          <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-accent to-teal-500 text-white font-semibold text-[13px]">{profile.email[0].toUpperCase()}</div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-3.5">
+            <div className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-1"><i className="ti ti-stack-2" /> Колоди</div>
+            <div className="text-[28px] font-semibold text-text-primary">{profile.deck_count}</div>
+          </div>
+          <div className="bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-3.5">
+            <div className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-1"><i className="ti ti-cards" /> Картки</div>
+            <div className="text-[28px] font-semibold text-text-primary">{profile.card_count}</div>
+          </div>
+          <div className="bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-3.5">
+            <div className="text-[11px] text-text-muted uppercase tracking-[0.08em] mb-1"><i className="ti ti-folder" /> Папки</div>
+            <div className="text-[28px] font-semibold text-text-primary">{profile.folder_count}</div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="account-stats">
-          <div className="account-stat">
-            <span className="account-stat-value">{profile.deck_count}</span>
-            <span className="account-stat-label">Колод</span>
-          </div>
-          <div className="account-stat">
-            <span className="account-stat-value">{profile.card_count}</span>
-            <span className="account-stat-label">Карток</span>
-          </div>
-          <div className="account-stat">
-            <span className="account-stat-value">{profile.folder_count}</span>
-            <span className="account-stat-label">Папок</span>
-          </div>
+        <div className="flex items-center justify-between my-6 mb-4">
+          <h2 className="text-[18px] font-medium m-0">Змінити пароль</h2>
         </div>
 
-        <div className="divider" />
-
-        {/* Change password */}
-        <h2 className="section-title" style={{ fontSize: '1.125rem', marginBottom: '1.25rem' }}>
-          🔐 Змінити пароль
-        </h2>
-
-        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <div className="field">
-            <input
-              id="current-password"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder=" "
-              required
-              autoComplete="current-password"
-            />
-            <label htmlFor="current-password">Поточний пароль</label>
-          </div>
-
-          <div className="field">
-            <input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder=" "
-              required
-              autoComplete="new-password"
-            />
-            <label htmlFor="new-password">Новий пароль</label>
-          </div>
-
-          <div className="field">
-            <input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder=" "
-              required
-              autoComplete="new-password"
-            />
-            <label htmlFor="confirm-password">Підтвердіть новий пароль</label>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-          >
-            {changingPassword ? <span className="spinner" /> : null}
-            {changingPassword ? 'Зберігаємо...' : 'Змінити пароль'}
-          </button>
-        </form>
-      </div>
-    </>
+        <div className="mb-6">
+          <form onSubmit={handleChangePassword}>
+            <div className="relative mb-4">
+              <input className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)} placeholder=" " required
+                autoComplete="current-password" />
+              <label className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">Поточний пароль</label>
+              <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
+            </div>
+            <div className="relative mb-4">
+              <input className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)} placeholder=" " required
+                autoComplete="new-password" />
+              <label className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">Новий пароль</label>
+              <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
+            </div>
+            <div className="relative mb-4">
+              <input className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)} placeholder=" " required
+                autoComplete="new-password" />
+              <label className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">Підтвердіть новий пароль</label>
+              <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
+            </div>
+            <button type="submit" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}>
+              {changingPassword ? 'Зберігаємо…' : 'Змінити пароль'}
+            </button>
+          </form>
+        </div>
+      </main>
+    </div>
   )
 }
