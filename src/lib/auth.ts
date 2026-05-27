@@ -2,8 +2,9 @@ import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
 import { JwtPayload } from './types'
 
-export const COOKIE_NAME = 'auth_token'
-export const USER_INFO_COOKIE = 'user_info'
+import { COOKIE_NAME, USER_INFO_COOKIE } from './auth-constants'
+export { COOKIE_NAME, USER_INFO_COOKIE }
+
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set')
 }
