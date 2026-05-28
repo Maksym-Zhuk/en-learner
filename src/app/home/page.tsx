@@ -17,10 +17,10 @@ function deckEmoji(id: string) {
 
 const NO_FOLDER = '__none__'
 
-const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition-all duration-200 whitespace-nowrap select-none'
+const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition duration-200 whitespace-nowrap select-none'
 const BTN_PRIMARY = `${BTN} bg-accent text-white hover:bg-accent-hover shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_1px_3px_rgba(0,0,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed`
 const BTN_GHOST = `${BTN} border-bg-subtle text-text-primary hover:bg-bg-elevated`
-const BTN_ICON = 'inline-flex items-center justify-center w-9 h-9 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition-all duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
+const BTN_ICON = 'inline-flex items-center justify-center w-9 h-9 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
 const STAT_CARD = 'bg-bg-surface border border-bg-subtle rounded-md py-3.5 px-4'
 
 export default function HomePage() {
@@ -52,6 +52,11 @@ export default function HomePage() {
     if (!createKind) return
     const el = homeModalRef.current?.querySelector<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')
     el?.focus()
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setCreateKind(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [createKind])
 
   useEffect(() => {
@@ -177,11 +182,14 @@ export default function HomePage() {
     return (
       <article
         key={deck.id}
-        className={`group/card bg-bg-surface border rounded-md p-[18px] flex flex-col gap-2.5 relative transition-all duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent ${dragging ? 'opacity-40 border-accent cursor-grabbing' : 'border-bg-subtle'}`}
+        className={`group/card bg-bg-surface border rounded-md p-[18px] flex flex-col gap-2.5 relative transition duration-200 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent ${dragging ? 'opacity-40 border-accent cursor-grabbing' : 'border-bg-subtle'}`}
         draggable
         onDragStart={(e) => { setDragDeckId(deck.id); e.dataTransfer.effectAllowed = 'move' }}
         onDragEnd={() => { setDragDeckId(null); setDragOver(null) }}
+        tabIndex={0}
+        role="link"
         onClick={() => router.push(`/deck/${deck.id}`)}
+        onKeyDown={(e) => { if (e.key === 'Enter') router.push(`/deck/${deck.id}`) }}
       >
         <div className="flex items-center gap-2.5">
           <div className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-bg-elevated text-[20px] shrink-0">{deck.emoji || deckEmoji(deck.id)}</div>
@@ -270,7 +278,7 @@ export default function HomePage() {
               return (
                 <div
                   key={folder.id}
-                  className={`rounded-md p-1 mb-2 transition-all duration-200 ${over ? 'bg-[rgba(16,185,129,0.12)] shadow-[inset_0_0_0_2px_var(--accent)]' : ''}`}
+                  className={`rounded-md p-1 mb-2 transition duration-200 ${over ? 'bg-[rgba(16,185,129,0.12)] shadow-[inset_0_0_0_2px_var(--accent)]' : ''}`}
                   onDragOver={(e) => { if (dragDeckId) { e.preventDefault(); setDragOver(folder.id) } }}
                   onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(null) }}
                   onDrop={(e) => { e.preventDefault(); onDropTo(folder.id) }}
@@ -318,7 +326,7 @@ export default function HomePage() {
             })}
 
             <div
-              className={`rounded-md p-1 transition-all duration-200 ${dragOver === NO_FOLDER ? 'bg-[rgba(16,185,129,0.12)] shadow-[inset_0_0_0_2px_var(--accent)]' : ''}`}
+              className={`rounded-md p-1 transition duration-200 ${dragOver === NO_FOLDER ? 'bg-[rgba(16,185,129,0.12)] shadow-[inset_0_0_0_2px_var(--accent)]' : ''}`}
               onDragOver={(e) => { if (dragDeckId) { e.preventDefault(); setDragOver(NO_FOLDER) } }}
               onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(null) }}
               onDrop={(e) => { e.preventDefault(); onDropTo(null) }}
@@ -334,7 +342,7 @@ export default function HomePage() {
         )}
       </main>
 
-      <button className="fixed bottom-7 right-7 z-40 inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white border-0 cursor-pointer transition-all duration-200 hover:bg-accent-hover hover:scale-105 shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_0_0_1px_rgba(255,255,255,0.08)]" onClick={() => router.push('/lookup')} title={t('nav.findWord')}>
+      <button className="fixed bottom-7 right-7 z-40 inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white border-0 cursor-pointer transition duration-200 hover:bg-accent-hover hover:scale-105 shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_0_0_1px_rgba(255,255,255,0.08)]" onClick={() => router.push('/lookup')} title={t('nav.findWord')}>
         <i className="ti ti-search text-xl" />
       </button>
 
@@ -349,7 +357,7 @@ export default function HomePage() {
             <form className="p-5" onSubmit={handleCreate}>
               <label className="block text-[11px] text-text-secondary mb-1.5 font-medium">{createKind === 'deck' ? t('home.deckName') : t('home.folderName')}</label>
               <input
-                className="w-full h-12 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] px-3.5 outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted"
+                className="w-full h-12 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] px-3.5 outline-none transition duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted"
                 placeholder={createKind === 'deck' ? t('home.deckNamePlaceholder') : t('home.folderNamePlaceholder')}
                 maxLength={createKind === 'deck' ? 80 : 60}
                 value={createName}

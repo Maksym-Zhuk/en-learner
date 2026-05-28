@@ -49,7 +49,7 @@ export default function SharedDeckPage() {
           <div style={{ fontSize: 48, marginBottom: 12 }}>🔒</div>
           <h1 className="text-[22px] font-semibold text-text-primary" style={{ margin: 0 }}>Колоду не знайдено</h1>
           <p className="text-text-muted text-[13px] mt-2">Посилання недійсне або доступ закрито</p>
-          <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] bg-accent text-white rounded-[10px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px mt-4">Увійти до en-learner</Link>
+          <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] bg-accent text-white rounded-[10px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px mt-4">Увійти до en-learner</Link>
         </div>
       </section>
     )
@@ -59,10 +59,10 @@ export default function SharedDeckPage() {
     <div className="min-h-screen flex flex-col">
       <nav className="sticky top-0 z-50 flex items-center justify-between px-7 py-3.5 border-b border-bg-subtle bg-[rgba(15,17,23,0.7)] backdrop-blur-[12px]">
         <Link href="/login" className="inline-flex items-center gap-2.5 text-text-primary font-semibold text-[18px] tracking-[-0.01em]">
-          <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-hover inline-flex items-center justify-center text-white text-sm font-semibold"><span>en</span></span>
+          <span className="w-7 h-7 rounded-lg bg-accent inline-flex items-center justify-center text-white text-sm font-semibold"><span>en</span></span>
           <span>en-learner</span>
         </Link>
-        <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-user-plus" /> Зареєструватися</Link>
+        <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-user-plus" /> Зареєструватися</Link>
       </nav>
 
       <main className="flex-1 px-6 py-6 pb-16 max-w-[1100px] w-full mx-auto [animation:fadeIn_280ms_ease]">
@@ -74,7 +74,7 @@ export default function SharedDeckPage() {
             <div className="text-text-secondary text-[13px] mt-1">{cards.length} {cards.length === 1 ? 'слово' : 'слів'} · натисніть картку, щоб побачити переклад</div>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-bookmark" /> Зберегти собі</Link>
+            <Link href="/register" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px"><i className="ti ti-bookmark" /> Зберегти собі</Link>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export default function SharedDeckPage() {
             {cards.map((c) => {
               const isF = flipped.has(c.id)
               return (
-                <article key={c.id} role="button" tabIndex={0} className="bg-bg-surface border border-bg-subtle rounded-[10px] p-[18px] flex flex-col gap-2.5 transition-all cursor-pointer relative hover:-translate-y-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent" onClick={() => toggle(c.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(c.id) } }} style={{ minHeight: 120, justifyContent: 'center' }}>
+                <article key={c.id} role="button" tabIndex={0} className="bg-bg-surface border border-bg-subtle rounded-[10px] p-[18px] flex flex-col gap-2.5 transition cursor-pointer relative hover:-translate-y-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent" onClick={() => toggle(c.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(c.id) } }} style={{ minHeight: 120, justifyContent: 'center' }}>
                   {!isF ? (
                     <>
                       <h3 className="text-[15px] font-medium text-accent">{c.word}</h3>

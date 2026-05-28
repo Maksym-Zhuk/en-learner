@@ -84,7 +84,7 @@ export default function GroupFolderPage() {
               <Link
                 key={deck.id}
                 href={`/deck/${deck.id}`}
-                className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+                className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 transition duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
               >
                 <div className="flex justify-between items-start gap-2">
                   <h3 className="text-[18px] font-medium leading-tight m-0">{deck.name}</h3>
@@ -93,13 +93,13 @@ export default function GroupFolderPage() {
                 <span className="text-text-muted text-[12px]">{deck.card_count} {deck.card_count === 1 ? 'слово' : 'слів'}</span>
                 <div className="flex gap-2 mt-1">
                   <button
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-accent text-white text-[12px] font-medium cursor-pointer transition-all hover:bg-accent-hover"
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-accent text-white text-[12px] font-medium cursor-pointer transition hover:bg-accent-hover"
                     onClick={(e) => { e.preventDefault(); router.push(`/deck/${deck.id}/study`) }}
                   >
                     <i className="ti ti-cards text-sm" /> Картки
                   </button>
                   <button
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-bg-elevated border border-bg-subtle text-text-primary text-[12px] font-medium cursor-pointer transition-all hover:bg-bg-subtle"
+                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-bg-elevated border border-bg-subtle text-text-primary text-[12px] font-medium cursor-pointer transition hover:bg-bg-subtle"
                     onClick={(e) => { e.preventDefault(); router.push(`/deck/${deck.id}/quiz/multiple`) }}
                   >
                     <i className="ti ti-list-check text-sm" /> Тест

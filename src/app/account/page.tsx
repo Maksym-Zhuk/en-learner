@@ -92,7 +92,7 @@ export default function AccountPage() {
             <h1 className="text-[24px] font-semibold text-text-primary">{t('account.title')}</h1>
             <p className="text-text-secondary text-[13px] mt-1">{t('account.registeredOn', { date: formatDate(profile.created_at) })}</p>
           </div>
-          <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-accent to-teal-500 text-white font-semibold text-[13px]">{profile.email[0].toUpperCase()}</div>
+          <div className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-accent text-white font-semibold text-[13px]">{profile.email[0].toUpperCase()}</div>
         </div>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
@@ -117,27 +117,27 @@ export default function AccountPage() {
         <div className="mb-6">
           <form onSubmit={handleChangePassword}>
             <div className="relative mb-4">
-              <input id="acct-current-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={currentPassword}
+              <input id="acct-current-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition focus:border-accent placeholder-transparent peer" type="password" value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)} placeholder=" " required
                 autoComplete="current-password" />
-              <label htmlFor="acct-current-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.currentPassword')}</label>
+              <label htmlFor="acct-current-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.currentPassword')}</label>
               <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
             </div>
             <div className="relative mb-4">
-              <input id="acct-new-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={newPassword}
+              <input id="acct-new-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition focus:border-accent placeholder-transparent peer" type="password" value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)} placeholder=" " required
                 autoComplete="new-password" />
-              <label htmlFor="acct-new-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.newPassword')}</label>
+              <label htmlFor="acct-new-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.newPassword')}</label>
               <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
             </div>
             <div className="relative mb-4">
-              <input id="acct-confirm-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer" type="password" value={confirmPassword}
+              <input id="acct-confirm-password" className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition focus:border-accent placeholder-transparent peer" type="password" value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)} placeholder=" " required
                 autoComplete="new-password" />
-              <label htmlFor="acct-confirm-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.confirmPassword')}</label>
+              <label htmlFor="acct-confirm-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('account.confirmPassword')}</label>
               <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
             </div>
-            <button type="submit" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px"
+            <button type="submit" className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px"
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}>
               {changingPassword ? t('account.submittingPassword') : t('account.submitPassword')}
             </button>

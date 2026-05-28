@@ -65,8 +65,8 @@ function Summary({ correct, total, onRestart, onBack }: { correct: number; total
         </div>
       </div>
       <div className="flex items-center justify-center gap-3">
-        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={onBack}>{t('quiz.backToDeck')}</button>
-        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={onRestart}><i className="ti ti-refresh" /> {t('quiz.retry')}</button>
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-bg-elevated" onClick={onBack}>{t('quiz.backToDeck')}</button>
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px" onClick={onRestart}><i className="ti ti-refresh" /> {t('quiz.retry')}</button>
       </div>
     </div>
   )
@@ -122,11 +122,11 @@ function MultipleChoice({ cards, mode, onFinish }: { cards: Card[]; mode: BackMo
           {card.example_en && <div className="text-[14px] text-text-secondary italic mb-6">{card.example_en}</div>}
           <div className="grid grid-cols-1 gap-3">
             {options.map((opt, i) => {
-              let cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] hover:bg-bg-elevated w-full'
+              let cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition flex items-center justify-between gap-3 min-h-[64px] hover:bg-bg-elevated w-full'
               if (selected) {
-                if (opt === right) cls = 'appearance-none bg-[rgba(34,197,94,0.15)] border border-success text-success rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] w-full'
-                else if (opt === selected) cls = 'appearance-none bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] w-full [animation:shake_400ms_ease]'
-                else cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition-all flex items-center justify-between gap-3 min-h-[64px] pointer-events-none opacity-50 w-full'
+                if (opt === right) cls = 'appearance-none bg-[rgba(34,197,94,0.15)] border border-success text-success rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition flex items-center justify-between gap-3 min-h-[64px] w-full'
+                else if (opt === selected) cls = 'appearance-none bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-[10px] px-4 py-[18px] font-[inherit] text-[15px] font-medium text-left cursor-pointer transition flex items-center justify-between gap-3 min-h-[64px] w-full [animation:shake_400ms_ease]'
+                else cls = 'appearance-none bg-bg-surface border border-bg-subtle rounded-[10px] px-4 py-[18px] text-text-primary font-[inherit] text-[15px] font-medium text-left cursor-pointer transition flex items-center justify-between gap-3 min-h-[64px] pointer-events-none opacity-50 w-full'
               }
               return (
                 <button key={opt} className={cls} onClick={() => handleSelect(opt)} disabled={!!selected}>
@@ -199,7 +199,7 @@ function WriteMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; o
             <div className="relative">
               <input
                 ref={inputRef}
-                className={`w-full h-14 bg-bg-elevated border-[1.5px] rounded-[10px] text-text-primary font-[inherit] text-[18px] px-5 pr-14 outline-none text-center transition-all focus:border-accent focus:shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)] ${
+                className={`w-full h-14 bg-bg-elevated border-[1.5px] rounded-[10px] text-text-primary font-[inherit] text-[18px] px-5 pr-14 outline-none text-center transition focus:border-accent focus:shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)] ${
                   feedback === 'correct' ? 'border-success shadow-[0_0_0_1px_theme(colors.success),0_0_20px_rgba(34,197,94,0.15)]' :
                   feedback === 'wrong' ? 'border-danger shadow-[0_0_0_1px_theme(colors.danger),0_0_20px_rgba(239,68,68,0.15)] [animation:shake_400ms_ease]' :
                   'border-bg-subtle'
@@ -272,9 +272,9 @@ function MatchMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; o
 
   const getPillClass = (i: MItem) => {
     if (i.matched) return 'bg-bg-surface border border-bg-subtle rounded-full px-4 py-3 text-text-primary text-[15px] font-medium cursor-pointer transition-[opacity_350ms,transform_350ms] text-center select-none opacity-0 scale-0 pointer-events-none'
-    if (wrongIds.includes(i.id)) return 'bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition-all text-center select-none hover:bg-bg-elevated [animation:shake_400ms_ease]'
-    if (selectedId === i.id) return 'bg-bg-elevated border border-accent text-accent rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition-all text-center select-none shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)]'
-    return 'bg-bg-surface border border-bg-subtle rounded-full px-4 py-3 text-text-primary text-[15px] font-medium cursor-pointer transition-all text-center select-none hover:bg-bg-elevated'
+    if (wrongIds.includes(i.id)) return 'bg-[rgba(239,68,68,0.15)] border border-danger text-danger rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition text-center select-none hover:bg-bg-elevated [animation:shake_400ms_ease]'
+    if (selectedId === i.id) return 'bg-bg-elevated border border-accent text-accent rounded-full px-4 py-3 text-[15px] font-medium cursor-pointer transition text-center select-none shadow-[0_0_0_1px_theme(colors.accent),0_0_20px_rgba(16,185,129,0.15)]'
+    return 'bg-bg-surface border border-bg-subtle rounded-full px-4 py-3 text-text-primary text-[15px] font-medium cursor-pointer transition text-center select-none hover:bg-bg-elevated'
   }
 
   return (
@@ -300,7 +300,7 @@ function StudyHeaderlessProgress({ progress }: { progress: number }) {
   return (
     <div className="px-6 pt-3 pb-2 border-b border-bg-subtle">
       <div className="h-1 bg-bg-elevated rounded-full overflow-hidden">
-        <span className="block h-full bg-gradient-to-r from-accent to-emerald-300 rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
+        <span className="block h-full bg-accent rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
       </div>
     </div>
   )

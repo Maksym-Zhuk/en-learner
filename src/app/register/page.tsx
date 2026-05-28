@@ -52,7 +52,7 @@ function RegisterForm() {
       <section className="relative min-h-screen flex items-center justify-center px-6 py-12">
         <div className="relative w-full max-w-[480px] bg-bg-surface border border-bg-subtle rounded-[24px] px-9 py-10 shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
           <div className="inline-flex items-center gap-2.5 text-text-primary font-semibold text-[18px] tracking-[-0.01em] justify-center w-full mb-2">
-            <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-hover inline-flex items-center justify-center text-white text-sm font-semibold"><span>en</span></span>
+            <span className="w-7 h-7 rounded-lg bg-accent inline-flex items-center justify-center text-white text-sm font-semibold"><span>en</span></span>
             <span>en-learner</span>
           </div>
           <div className="text-text-muted text-[13px] text-center mb-7">{t('register.tagline')}</div>
@@ -67,7 +67,7 @@ function RegisterForm() {
             <div className="relative mb-4">
               <input
                 id="register-email"
-                className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer"
+                className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition focus:border-accent placeholder-transparent peer"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -75,13 +75,13 @@ function RegisterForm() {
                 required
                 autoComplete="email"
               />
-              <label htmlFor="register-email" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('register.email')}</label>
+              <label htmlFor="register-email" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('register.email')}</label>
               <i className="ti ti-mail absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
             </div>
             <div className="relative mb-4">
               <input
                 id="register-password"
-                className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition-all focus:border-accent placeholder-transparent peer"
+                className="w-full h-[52px] bg-bg-elevated border border-bg-subtle rounded-[10px] text-text-primary text-[15px] px-4 pt-[18px] pb-1.5 pl-11 outline-none transition focus:border-accent placeholder-transparent peer"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -89,11 +89,11 @@ function RegisterForm() {
                 required
                 autoComplete="new-password"
               />
-              <label htmlFor="register-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition-all peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('register.password')}</label>
+              <label htmlFor="register-password" className="absolute left-11 top-4 text-text-muted text-[15px] pointer-events-none transition peer-focus:top-[7px] peer-focus:text-[11px] peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-[7px] peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:text-accent">{t('register.password')}</label>
               <i className="ti ti-lock absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg pointer-events-none transition-colors peer-focus:text-accent" />
             </div>
 
-            <button type="submit" className="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] w-full bg-accent text-white rounded-[10px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" disabled={loading}>
+            <button type="submit" className="inline-flex items-center justify-center gap-2 h-12 px-5 text-[15px] w-full bg-accent text-white rounded-[10px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px" disabled={loading}>
               {loading ? t('register.submitting') : t('register.submit')}
             </button>
           </form>

@@ -245,7 +245,7 @@ export default function WordPage() {
 
             {/* Add to deck */}
             <div className="flex items-center gap-3 flex-wrap pt-2 border-t border-bg-subtle">
-              <div className="relative inline-flex items-center gap-2 bg-bg-elevated border border-bg-subtle rounded-[10px] px-3 py-2 text-[13px] text-text-primary transition-all hover:border-accent">
+              <div className="relative inline-flex items-center gap-2 bg-bg-elevated border border-bg-subtle rounded-[10px] px-3 py-2 text-[13px] text-text-primary transition hover:border-accent">
                 <i className="ti ti-stack-2" />
                 <span>Колода:</span>
                 <select
@@ -260,7 +260,7 @@ export default function WordPage() {
                 </select>
               </div>
               <button
-                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 onClick={handleAdd}
                 disabled={adding || !deckId}
               >

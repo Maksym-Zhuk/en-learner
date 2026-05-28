@@ -11,10 +11,10 @@ import { useLocale } from '@/lib/i18n'
 
 const DECK_EMOJIS = ['📘', '📗', '📙', '📕', '📓', '🗂️', '🎯', '🧠', '✏️', '📝', '🔤', '💬', '🌍', '🎓', '🚀', '⭐', '🔥', '💡', '📚', '🎪']
 
-const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition-all duration-200 whitespace-nowrap select-none'
+const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition duration-200 whitespace-nowrap select-none'
 const BTN_PRIMARY = `${BTN} bg-accent text-white hover:bg-accent-hover shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_1px_3px_rgba(0,0,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed`
 const BTN_GHOST = `${BTN} border-bg-subtle text-text-primary hover:bg-bg-elevated`
-const BTN_ICON = 'inline-flex items-center justify-center w-10 h-10 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition-all duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
+const BTN_ICON = 'inline-flex items-center justify-center w-10 h-10 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
 
 const MODE_ICON_BG: Record<string, string> = {
   '': 'bg-[rgba(16,185,129,0.15)] text-accent',
@@ -185,12 +185,12 @@ export default function DeckPage() {
                 const disabled = m.mode === 'quiz/multiple' && cards.length < 4
                 return (
                   <button key={m.mode}
-                    className={`group/tile bg-bg-surface border border-bg-subtle rounded-md cursor-pointer transition-all duration-200 text-left flex flex-col gap-2.5 p-[18px] relative overflow-hidden hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`group/tile bg-bg-surface border border-bg-subtle rounded-md cursor-pointer transition duration-200 text-left flex flex-col gap-2.5 p-[18px] relative overflow-hidden hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={() => { if (disabled) { showToast(t('deck.needMin4'), 'error'); return } router.push(`/deck/${deckId}/${m.mode}`) }}>
                     <div className={`inline-flex items-center justify-center w-9 h-9 rounded-sm ${MODE_ICON_BG[m.cls]}`}><i className={`ti ${m.icon} text-xl`} /></div>
                     <div className="text-[15px] font-medium text-text-primary">{m.title}</div>
                     <div className="text-text-secondary text-[11px] leading-relaxed">{m.desc}</div>
-                    <i className="ti ti-arrow-right absolute bottom-3.5 right-3.5 text-text-muted opacity-0 transition-all duration-200 group-hover/tile:opacity-100 group-hover/tile:text-accent" />
+                    <i className="ti ti-arrow-right absolute bottom-3.5 right-3.5 text-text-muted opacity-0 transition duration-200 group-hover/tile:opacity-100 group-hover/tile:text-accent" />
                   </button>
                 )
               })}
@@ -239,8 +239,8 @@ export default function DeckPage() {
                     {!deck.readonly && (
                       <td className="py-2.5 px-4">
                         <div className="flex gap-1 justify-end">
-                          <button className="inline-flex items-center justify-center w-9 h-9 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-subtle transition-all" onClick={() => setEditing(c)} title={t('common.edit')}><i className="ti ti-pencil text-sm" /></button>
-                          <button className="inline-flex items-center justify-center w-9 h-9 rounded-md text-text-muted hover:text-danger hover:bg-bg-subtle transition-all" onClick={() => handleDeleteCard(c.id)} title={t('common.delete')}><i className="ti ti-trash text-sm" /></button>
+                          <button className="inline-flex items-center justify-center w-9 h-9 rounded-md text-text-muted hover:text-text-primary hover:bg-bg-subtle transition" onClick={() => setEditing(c)} title={t('common.edit')}><i className="ti ti-pencil text-sm" /></button>
+                          <button className="inline-flex items-center justify-center w-9 h-9 rounded-md text-text-muted hover:text-danger hover:bg-bg-subtle transition" onClick={() => handleDeleteCard(c.id)} title={t('common.delete')}><i className="ti ti-trash text-sm" /></button>
                         </div>
                       </td>
                     )}
@@ -254,7 +254,7 @@ export default function DeckPage() {
       </main>
 
       {!deck.readonly && (
-        <button className="fixed bottom-7 right-7 z-40 inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white border-0 cursor-pointer transition-all duration-200 hover:bg-accent-hover hover:scale-105 shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_0_0_1px_rgba(255,255,255,0.08)]" onClick={() => router.push(`/lookup?deckId=${deckId}`)} title={t('nav.findWord')}><i className="ti ti-search text-xl" /></button>
+        <button className="fixed bottom-7 right-7 z-40 inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent text-white border-0 cursor-pointer transition duration-200 hover:bg-accent-hover hover:scale-105 shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_0_0_1px_rgba(255,255,255,0.08)]" onClick={() => router.push(`/lookup?deckId=${deckId}`)} title={t('nav.findWord')}><i className="ti ti-search text-xl" /></button>
       )}
 
       <ShareToGroupModal open={shareOpen} onClose={() => setShareOpen(false)} kind="deck" id={deckId} name={deck.name} />
@@ -325,7 +325,7 @@ function DeckSettingsModal({
           <div className="mb-4">
             <label className="block text-[11px] text-text-secondary mb-1.5 font-medium">{t('deck.deckName')}</label>
             <input
-              className="w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[14px] px-3 outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)]"
+              className="w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[14px] px-3 outline-none transition duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)]"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={80}
@@ -339,7 +339,7 @@ function DeckSettingsModal({
                 <button
                   key={em}
                   type="button"
-                  className={`w-10 h-10 rounded-md text-[20px] flex items-center justify-center transition-all duration-150 border-2 ${selectedEmoji === em ? 'border-accent bg-[rgba(16,185,129,0.15)]' : 'border-transparent bg-bg-elevated hover:bg-bg-subtle'}`}
+                  className={`w-10 h-10 rounded-md text-[20px] flex items-center justify-center transition duration-150 border-2 ${selectedEmoji === em ? 'border-accent bg-[rgba(16,185,129,0.15)]' : 'border-transparent bg-bg-elevated hover:bg-bg-subtle'}`}
                   onClick={() => setSelectedEmoji(em)}
                 >
                   {em}
@@ -350,7 +350,7 @@ function DeckSettingsModal({
           <div className="flex justify-between items-center pt-4 border-t border-bg-subtle">
             <button
               type="button"
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-[13px] font-medium text-danger border border-transparent hover:bg-[rgba(239,68,68,0.1)] cursor-pointer transition-all"
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-[13px] font-medium text-danger border border-transparent hover:bg-[rgba(239,68,68,0.1)] cursor-pointer transition"
               onClick={onDelete}
             >
               <i className="ti ti-trash text-sm" /> {t('deck.deleteDeck')}
@@ -404,7 +404,7 @@ function EditWordModal({ card, onClose, onSaved }: { card: Card; onClose: () => 
     } catch { showToast(t('common.networkError'), 'error') } finally { setSaving(false) }
   }
 
-  const fieldCls = 'w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[14px] px-3 outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)]'
+  const fieldCls = 'w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[14px] px-3 outline-none transition duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)]'
   const labelCls = 'block text-[11px] text-text-secondary mb-1.5 font-medium'
 
   return (

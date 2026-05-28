@@ -140,8 +140,8 @@ export default function StudyPage() {
             </div>
           </div>
           <div className="flex items-center justify-center gap-3">
-            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={() => router.push(`/deck/${deckId}`)}>{t('study.backToDeck')}</button>
-            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={restart}><i className="ti ti-refresh" /> {t('study.restart')}</button>
+            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-bg-elevated" onClick={() => router.push(`/deck/${deckId}`)}>{t('study.backToDeck')}</button>
+            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px" onClick={restart}><i className="ti ti-refresh" /> {t('study.restart')}</button>
           </div>
         </div>
       </div>
@@ -155,7 +155,7 @@ export default function StudyPage() {
     <div className="bg-bg-base min-h-screen flex flex-col">
       <div className="px-6 pt-3 pb-2 border-b border-bg-subtle">
         <div className="h-1 bg-bg-elevated rounded-full overflow-hidden">
-          <span className="block h-full bg-gradient-to-r from-accent to-emerald-300 rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
+          <span className="block h-full bg-accent rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
           <Link href={`/deck/${deckId}`} className="flex items-center gap-2 text-text-secondary text-[13px] hover:text-text-primary transition-colors">
@@ -176,8 +176,8 @@ export default function StudyPage() {
         <div className="text-[13px] text-text-muted mb-4">{t('study.card')} {current + 1} {t('study.of')} {queue.length}</div>
         <FlipCard card={card} flipped={flipped} onClick={() => setFlipped((f) => !f)} backMode={backMode} />
         <div className={`mt-8 flex gap-3 transition-[opacity_300ms,transform_300ms] ${flipped ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
-          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-[rgba(239,68,68,0.3)] text-danger rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-[rgba(239,68,68,0.08)] hover:border-danger" onClick={handleDidntKnow}><i className="ti ti-x" /> {t('study.didntKnow')}</button>
-          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={handleKnew}><i className="ti ti-check" /> {t('study.knew')}</button>
+          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-[rgba(239,68,68,0.3)] text-danger rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-[rgba(239,68,68,0.08)] hover:border-danger" onClick={handleDidntKnow}><i className="ti ti-x" /> {t('study.didntKnow')}</button>
+          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition hover:bg-accent-hover hover:-translate-y-px" onClick={handleKnew}><i className="ti ti-check" /> {t('study.knew')}</button>
         </div>
       </div>
     </div>

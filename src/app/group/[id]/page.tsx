@@ -17,13 +17,13 @@ interface GroupDetail {
 
 const EMOJIS = ['👥', '🚀', '📚', '🎯', '🏆', '💼', '🌍', '🧠']
 
-const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition-all duration-200 whitespace-nowrap select-none'
+const BTN = 'inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md text-[13px] font-medium border border-transparent cursor-pointer transition duration-200 whitespace-nowrap select-none'
 const BTN_PRIMARY = `${BTN} bg-accent text-white hover:bg-accent-hover shadow-[0_1px_0_rgba(255,255,255,0.08)_inset,0_1px_3px_rgba(0,0,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed`
 const BTN_GHOST = `${BTN} border-bg-subtle text-text-primary hover:bg-bg-elevated`
 const BTN_DANGER = `${BTN} text-danger border-[rgba(239,68,68,0.3)] hover:bg-[rgba(239,68,68,0.1)]`
-const BTN_ICON = 'inline-flex items-center justify-center w-9 h-9 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition-all duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
+const BTN_ICON = 'inline-flex items-center justify-center w-9 h-9 rounded-md bg-bg-elevated text-text-secondary cursor-pointer transition duration-200 hover:text-text-primary hover:bg-bg-subtle border border-transparent'
 const SELECT = 'appearance-none bg-bg-elevated border border-bg-subtle rounded-md text-text-primary text-[13px] cursor-pointer h-10 px-3'
-const INPUT = 'w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] px-3.5 outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted'
+const INPUT = 'w-full h-11 bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] px-3.5 outline-none transition duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted'
 
 type Tab = 'decks' | 'folders' | 'members'
 
@@ -190,7 +190,7 @@ export default function GroupPage() {
 
   const TabBtn = ({ id, icon, label, count }: { id: Tab; icon: string; label: string; count: number }) => (
     <button
-      className={`inline-flex items-center gap-2 px-4 py-2.5 bg-transparent border-none border-b-2 text-[13px] font-medium cursor-pointer transition-all duration-200 -mb-px ${tab === id ? 'text-accent border-accent' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+      className={`inline-flex items-center gap-2 px-4 py-2.5 bg-transparent border-none border-b-2 text-[13px] font-medium cursor-pointer transition duration-200 -mb-px ${tab === id ? 'text-accent border-accent' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
       onClick={() => setTab(id)}
     >
       <i className={`ti ${icon}`} /> {label}
@@ -246,7 +246,7 @@ export default function GroupPage() {
             ) : (
               <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
                 {deckShares.map((s) => (
-                  <Link key={s.id} href={`/deck/${s.deck_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition-all duration-200 hover:-translate-y-0.5 hover:border-accent">
+                  <Link key={s.id} href={`/deck/${s.deck_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition duration-200 hover:-translate-y-0.5 hover:border-accent">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-[18px] font-medium leading-tight m-0">{s.deck_name}</h3>
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-bg-elevated text-base shrink-0">📘</div>
@@ -281,7 +281,7 @@ export default function GroupPage() {
             ) : (
               <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
                 {folderShares.map((s) => (
-                  <Link key={s.id} href={`/group/${groupId}/folder/${s.folder_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition-all duration-200 hover:-translate-y-0.5 hover:border-accent">
+                  <Link key={s.id} href={`/group/${groupId}/folder/${s.folder_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition duration-200 hover:-translate-y-0.5 hover:border-accent">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-[18px] font-medium leading-tight m-0">{s.folder_name}</h3>
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-bg-elevated text-base shrink-0">📁</div>
@@ -312,7 +312,7 @@ export default function GroupPage() {
                     !(group.myRole === 'editor' && m.role === 'editor')
                   return (
                     <li key={m.id} className="flex items-center gap-3 py-2">
-                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white font-semibold text-[13px] bg-gradient-to-br from-accent to-teal-500">{m.email.slice(0, 2).toUpperCase()}</span>
+                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white font-semibold text-[13px] bg-accent">{m.email.slice(0, 2).toUpperCase()}</span>
                       <span className="flex-1 text-[13px]">{m.email}<small className="text-text-muted"> · {m.role}</small></span>
                       {canRemoveThis && (
                         <button className={`${BTN_ICON} w-9 h-9 hover:text-danger`} title="Видалити з групи" onClick={() => removeMember(m.id)}>
@@ -378,14 +378,14 @@ export default function GroupPage() {
           <form onSubmit={handleEdit}>
             <div className="flex gap-2 flex-wrap mb-4">
               {EMOJIS.map((em) => (
-                <button type="button" key={em} className={`w-10 h-10 rounded-md text-xl inline-flex items-center justify-center cursor-pointer transition-all duration-200 border ${editForm.emoji === em ? 'border-accent bg-[rgba(16,185,129,0.15)]' : 'border-bg-subtle bg-bg-base hover:bg-bg-elevated'}`}
+                <button type="button" key={em} className={`w-10 h-10 rounded-md text-xl inline-flex items-center justify-center cursor-pointer transition duration-200 border ${editForm.emoji === em ? 'border-accent bg-[rgba(16,185,129,0.15)]' : 'border-bg-subtle bg-bg-base hover:bg-bg-elevated'}`}
                   onClick={() => setEditForm({ ...editForm, emoji: em })}>{em}</button>
               ))}
             </div>
             <label className="block text-[11px] text-text-secondary mb-1.5 font-medium">Назва групи</label>
             <input className={INPUT} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} autoFocus />
             <label className="block text-[11px] text-text-secondary mb-1.5 mt-4 font-medium">Опис</label>
-            <textarea className="w-full min-h-[72px] resize-y bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] py-2.5 px-3.5 outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Необов'язково" />
+            <textarea className="w-full min-h-[72px] resize-y bg-bg-base border border-bg-subtle rounded-md text-text-primary text-[15px] py-2.5 px-3.5 outline-none transition duration-200 focus:border-accent focus:shadow-[0_0_0_3px_rgba(16,185,129,0.15)] placeholder:text-text-muted" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Необов'язково" />
             <div className="flex justify-end gap-2 mt-5">
               <button type="button" className={BTN_GHOST} onClick={() => setEditOpen(false)}>Скасувати</button>
               <button type="submit" className={BTN_PRIMARY} disabled={!editForm.name.trim() || savingEdit}>{savingEdit ? 'Збереження…' : 'Зберегти'}</button>

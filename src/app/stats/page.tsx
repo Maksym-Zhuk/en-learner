@@ -179,7 +179,7 @@ export default function StatsPage() {
                           <span className="flex items-center gap-1.5"><i className={`ti ${MODE_ICON[m.mode] || 'ti-circle'} text-text-muted`} />{MODE_LABEL[m.mode] || m.mode}</span>
                           <span className="text-text-muted text-[11px] tabular-nums"><b className="text-text-primary">{m.correct}</b>/{m.total} · <span className="text-accent font-medium">{p}%</span></span>
                         </div>
-                        <div className="h-2 rounded-full bg-bg-elevated overflow-hidden"><span className="block h-full bg-accent rounded-full transition-all" style={{ width: `${p}%` }} /></div>
+                        <div className="h-2 rounded-full bg-bg-elevated overflow-hidden"><span className="block h-full bg-accent rounded-full transition" style={{ width: `${p}%` }} /></div>
                       </div>
                     )
                   })}
@@ -191,7 +191,7 @@ export default function StatsPage() {
                 <div className="flex flex-col gap-1">
                   {stats.topDecks.length === 0 && <p className="text-text-muted text-[13px]">{t('stats.noDecks')}</p>}
                   {stats.topDecks.map((d, i) => (
-                    <Link key={d.id} href={`/deck/${d.id}`} className="flex items-center gap-3 py-2 px-1 rounded-md hover:bg-bg-elevated transition-all">
+                    <Link key={d.id} href={`/deck/${d.id}`} className="flex items-center gap-3 py-2 px-1 rounded-md hover:bg-bg-elevated transition">
                       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-bg-elevated text-text-muted text-[11px] font-semibold">{i + 1}</span>
                       <span className="text-base">📘</span>
                       <span className="flex-1 text-[13px] truncate">{d.name}</span>

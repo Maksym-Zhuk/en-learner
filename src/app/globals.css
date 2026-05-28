@@ -237,7 +237,7 @@ button,input {
   color:var(--text-muted);
   font-size:var(--text-base);
   pointer-events:none;
-  transition:all .18s;
+  transition:top .18s ease, font-size .18s ease, color .18s ease;
   position:absolute;
   top:16px;
   left:44px
@@ -1825,7 +1825,6 @@ button,input {
 .word-col .example {
   font-size:var(--text-sm);
   color:var(--text-secondary);
-  border-left:2px solid var(--bg-subtle);
   padding-left:10px;
   font-style:italic
 }

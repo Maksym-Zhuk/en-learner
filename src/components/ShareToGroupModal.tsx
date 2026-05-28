@@ -76,7 +76,7 @@ export default function ShareToGroupModal({ open, onClose, kind, id, name }: Sha
           ) : (
             <div className="flex flex-col gap-1">
               {groups.map((g) => (
-                <button key={g.id} className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] bg-transparent border border-bg-subtle text-left cursor-pointer transition-all hover:bg-bg-elevated hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed w-full" disabled={busyId === g.id} onClick={() => share(g.id)}>
+                <button key={g.id} className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] bg-transparent border border-bg-subtle text-left cursor-pointer transition hover:bg-bg-elevated hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed w-full" disabled={busyId === g.id} onClick={() => share(g.id)}>
                   <span className="text-[22px]">{g.emoji}</span>
                   <span className="flex-1 text-[13px] font-medium text-text-primary">{g.name}</span>
                   <span className="text-[11px] text-text-muted">{g.member_count} учасників</span>

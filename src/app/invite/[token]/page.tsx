@@ -62,7 +62,7 @@ export default function InvitePage() {
             <div className="text-[48px] mb-3">🔒</div>
             <h1 className="text-[22px] m-0">Запрошення недійсне</h1>
             <p className="text-text-secondary text-[13px] mt-2 mb-0">Можливо, його вже використали або відкликали.</p>
-            <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-5 bg-accent text-white rounded-[10px] text-[15px] font-medium cursor-pointer transition-all hover:bg-accent-hover mt-4">На головну</Link>
+            <Link href="/login" className="inline-flex items-center justify-center gap-2 h-12 px-5 bg-accent text-white rounded-[10px] text-[15px] font-medium cursor-pointer transition hover:bg-accent-hover mt-4">На головну</Link>
           </>
         ) : (
           <>
@@ -71,7 +71,7 @@ export default function InvitePage() {
             <p className="text-text-secondary text-[13px] mt-2 mb-0">
               Вас запрошують у «{preview.group_name}» як {preview.role === 'editor' ? 'редактора' : 'учасника'}.
             </p>
-            <button className="inline-flex items-center justify-center gap-2 h-12 px-5 w-full bg-accent text-white rounded-[10px] text-[15px] font-medium cursor-pointer transition-all hover:bg-accent-hover mt-4 disabled:opacity-60 disabled:cursor-not-allowed" onClick={accept} disabled={accepting}>
+            <button className="inline-flex items-center justify-center gap-2 h-12 px-5 w-full bg-accent text-white rounded-[10px] text-[15px] font-medium cursor-pointer transition hover:bg-accent-hover mt-4 disabled:opacity-60 disabled:cursor-not-allowed" onClick={accept} disabled={accepting}>
               {accepting ? 'Приєднання…' : 'Приєднатися'}
             </button>
           </>
