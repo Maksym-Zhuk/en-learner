@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-28T00:00:00Z",
+  "title": "Design System: en-learner",
+  "extensions": {
+    "colorMeta": {
+      "bg-base":       { "role": "neutral",  "displayName": "Night Floor",      "canonical": "oklch(12% 0.008 250)", "tonalRamp": ["#040507","#080c10","#0c1219","#101922","#14202c","#1a2a3b","#21354c","#2d455f"] },
+      "bg-surface":    { "role": "neutral",  "displayName": "Deep Surface",     "canonical": "oklch(17% 0.012 250)", "tonalRamp": ["#080c12","#0d1320","#12192d","#17203a","#1c2846","#223054","#293962","#334470"] },
+      "bg-elevated":   { "role": "neutral",  "displayName": "Elevated Layer",   "canonical": "oklch(22% 0.015 250)", "tonalRamp": ["#0b1019","#101828","#161f37","#1c2745","#222f54","#293862","#314270","#3a4d7e"] },
+      "bg-subtle":     { "role": "neutral",  "displayName": "Boundary Line",    "canonical": "oklch(27% 0.017 250)", "tonalRamp": ["#0e1420","#141d31","#1a2542","#212e52","#283762","#2f4171","#374b80","#40568f"] },
+      "accent":        { "role": "primary",  "displayName": "Emergence Green",  "canonical": "oklch(72% 0.15 162)",  "tonalRamp": ["#051812","#0a3525","#0f5238","#126f4c","#178c60","#1aaa74","#10b981","#73e8bb"] },
+      "accent-hover":  { "role": "primary",  "displayName": "Deep Emerald",     "canonical": "oklch(62% 0.15 162)",  "tonalRamp": ["#041410","#083020","#0c4a31","#0f6342","#127c53","#159566","#059669","#4dcb8e"] },
+      "success":       { "role": "secondary","displayName": "Growth Green",     "canonical": "oklch(76% 0.18 145)",  "tonalRamp": ["#061a0a","#0d3a18","#145b27","#1a7b37","#209b47","#26bb57","#22c55e","#7de8a0"] },
+      "danger":        { "role": "tertiary", "displayName": "Alert Red",        "canonical": "oklch(63% 0.24 25)",   "tonalRamp": ["#1c0404","#3d0a0a","#5e1111","#7f1818","#a01f1f","#c12626","#ef4444","#f8a0a0"] },
+      "warning":       { "role": "tertiary", "displayName": "Alert Amber",      "canonical": "oklch(77% 0.17 80)",   "tonalRamp": ["#1a1000","#3d2600","#613c00","#855200","#a96900","#cd7f00","#f59e0b","#fcd57a"] },
+      "text-primary":  { "role": "neutral",  "displayName": "Near White",       "canonical": "oklch(96% 0.007 240)", "tonalRamp": ["#1c2230","#2e3a4e","#40526c","#526a8a","#6a85a8","#8aa1c3","#b0c3db","#f1f5f9"] },
+      "text-secondary":{ "role": "neutral",  "displayName": "Soft Slate",       "canonical": "oklch(68% 0.022 240)", "tonalRamp": ["#141c29","#202d40","#2e3f58","#3d5270","#4e6789","#6480a2","#94a3b8","#ccd5e2"] },
+      "text-muted":    { "role": "neutral",  "displayName": "Receded Mist",     "canonical": "oklch(44% 0.024 240)", "tonalRamp": ["#0d1320","#172032","#223045","#2d4158","#39526c","#476681","#475569","#8090a8"] }
+    },
+    "typographyMeta": {
+      "display":    { "displayName": "Display",  "purpose": "English and Ukrainian vocabulary words in study sessions. The product made visible." },
+      "headline":   { "displayName": "Headline", "purpose": "Page-level titles: deck name in hero, home greeting. One per view." },
+      "title":      { "displayName": "Title",    "purpose": "Section headings, modal titles, score readouts." },
+      "body":       { "displayName": "Body",     "purpose": "Definitions, descriptions, form prose. Max 65-75ch per line." },
+      "label":      { "displayName": "Label",    "purpose": "Column headers, status badges, keyboard hints. The only uppercase usage in the system." }
+    },
+    "shadows": [
+      { "name": "shadow-sm",           "value": "0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.19)", "purpose": "Ambient resting shadow. Primary button at rest only." },
+      { "name": "shadow-md",           "value": "0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3)", "purpose": "Hover lift for cards (+translateY(-3px)), structural floating for dropdown panels." },
+      { "name": "shadow-lg",           "value": "0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3)", "purpose": "Full-screen modals and auth card. Heavy, intentional, floating layers only." },
+      { "name": "shadow-glow",         "value": "0 0 0 1px #10b981, 0 0 20px rgba(16,185,129,0.15)", "purpose": "Focus ring for inputs, selection ring for quiz/match elements. State, not decoration." },
+      { "name": "shadow-success-glow", "value": "0 0 0 1px #22c55e, 0 0 20px rgba(34,197,94,0.15)",  "purpose": "Write-mode input on correct submission." },
+      { "name": "shadow-danger-glow",  "value": "0 0 0 1px #ef4444, 0 0 20px rgba(239,68,68,0.15)",  "purpose": "Write-mode input on incorrect submission, error field state." }
+    ],
+    "motion": [
+      { "name": "t-standard",   "value": "0.2s ease-in-out",                  "purpose": "Default state transitions: color, border, background, opacity changes." },
+      { "name": "t-entrance",   "value": "0.28s cubic-bezier(0.4,0,0.2,1)",   "purpose": "View entrances (app-main viewIn), modal scale-in, slide-up animations." },
+      { "name": "t-flip",       "value": "0.6s cubic-bezier(0.4,0,0.2,1)",    "purpose": "Flash card flip. The one choreographed motion in the system." },
+      { "name": "t-label",      "value": "0.18s ease",                        "purpose": "Floating label shrink transition. Slightly faster than standard to feel snappy." },
+      { "name": "t-progress",   "value": "0.4s ease-out",                     "purpose": "Progress bar fill width transitions." },
+      { "name": "t-shake",      "value": "0.4s cubic-bezier(0.36,0.07,0.19,0.97)", "purpose": "Wrong-answer shake on quiz option cards and write-mode input." }
+    ],
+    "breakpoints": [
+      { "name": "mobile",  "value": "600px",  "purpose": "Single-column decks, stacked word-result-card, hidden word-table status column." },
+      { "name": "tablet",  "value": "900px",  "purpose": "2-col deck grid, hidden nav search pill and nav link labels, stacked group/stats layouts." },
+      { "name": "desktop", "value": "1100px", "purpose": "Max-width container (--max-w). Full 3-col deck grid, 4-col mode grid." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single affirmative action on any surface. Emerald, compact, lifts on hover.",
+      "html": "<button class=\"ds-btn-primary\">Study Now</button>",
+      "css": ".ds-btn-primary { background: #10b981; color: #fff; border: none; border-radius: 10px; height: 40px; padding: 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 1px 3px rgba(0,0,0,0.3); transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out; } .ds-btn-primary:hover { background: #059669; box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3); transform: translateY(-1px); } .ds-btn-primary:active { transform: translateY(0); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 1px #10b981, 0 0 20px rgba(16,185,129,0.15); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions alongside a primary button. Transparent, recedes visually.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #f1f5f9; border: 1px solid #252d3d; border-radius: 10px; height: 40px; padding: 0 16px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out; } .ds-btn-ghost:hover { background: #1e2535; border-color: #1e2535; } .ds-btn-ghost:focus-visible { outline: none; border-color: #10b981; box-shadow: 0 0 0 1px #10b981; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Square icon-only button. Used for edit, delete, share inline actions on cards.",
+      "html": "<button class=\"ds-btn-icon\" title=\"Edit\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg></button>",
+      "css": ".ds-btn-icon { background: #1e2535; border: none; border-radius: 10px; width: 40px; height: 40px; color: #94a3b8; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: color 0.2s ease-in-out, background 0.2s ease-in-out; } .ds-btn-icon:hover { color: #f1f5f9; background: #252d3d; } .ds-btn-icon:focus-visible { outline: none; box-shadow: 0 0 0 1px #10b981; }"
+    },
+    {
+      "name": "Input Field (Floating Label)",
+      "kind": "input",
+      "refersTo": "button-primary",
+      "description": "Floating-label input with icon. The only input pattern in the system.",
+      "html": "<div class=\"ds-field\"><input class=\"ds-input\" type=\"text\" placeholder=\" \" id=\"ds-f1\"><label class=\"ds-field-label\" for=\"ds-f1\">English word</label><svg class=\"ds-field-icon\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg></div>",
+      "css": ".ds-field { position: relative; margin-bottom: 16px; } .ds-input { background: #1e2535; border: 1px solid #252d3d; border-radius: 10px; width: 100%; height: 52px; color: #f1f5f9; font-family: Inter, system-ui, sans-serif; font-size: 15px; outline: none; padding: 18px 16px 6px 44px; transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; } .ds-input:focus { border-color: #10b981; box-shadow: 0 0 0 1px #10b981, 0 0 20px rgba(16,185,129,0.15); } .ds-field-label { color: #475569; font-size: 15px; font-family: Inter, system-ui, sans-serif; pointer-events: none; position: absolute; top: 16px; left: 44px; transition: all 0.18s ease; } .ds-input:focus ~ .ds-field-label, .ds-input:not(:placeholder-shown) ~ .ds-field-label { font-size: 11px; color: #10b981; top: 7px; } .ds-field-icon { color: #475569; position: absolute; top: 50%; left: 16px; transform: translateY(-50%); pointer-events: none; transition: color 0.2s ease-in-out; } .ds-input:focus ~ .ds-field-icon { color: #10b981; }"
+    },
+    {
+      "name": "Navigation Links",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Horizontal nav link row. Ambient chrome that stays out of the way.",
+      "html": "<nav class=\"ds-nav-links\"><a class=\"ds-nav-link ds-nav-link--active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg><span>Home</span></a><a class=\"ds-nav-link\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><line x1=\"8\" y1=\"21\" x2=\"16\" y2=\"21\"/><line x1=\"12\" y1=\"17\" x2=\"12\" y2=\"21\"/></svg><span>Study</span></a><a class=\"ds-nav-link\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg><span>Stats</span></a></nav>",
+      "css": ".ds-nav-links { display: flex; align-items: center; gap: 4px; } .ds-nav-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; color: #94a3b8; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; text-decoration: none; transition: color 0.2s ease-in-out, background 0.2s ease-in-out; } .ds-nav-link:hover { color: #f1f5f9; background: #1e2535; } .ds-nav-link--active { color: #10b981; background: rgba(16,185,129,0.15); }"
+    },
+    {
+      "name": "Deck Card",
+      "kind": "card",
+      "refersTo": "button-primary",
+      "description": "The primary content unit on the home screen. Lifts on hover to invite interaction.",
+      "html": "<div class=\"ds-deck-card\"><div class=\"ds-deck-head\"><h3 class=\"ds-deck-title\">B2 Vocabulary</h3><span class=\"ds-deck-emoji\">📘</span></div><div class=\"ds-deck-meta\"><span class=\"ds-badge\">48 words</span><span class=\"ds-badge ds-badge--accent\">12 due</span></div><div class=\"ds-progress\"><span style=\"width:65%\"></span></div><div class=\"ds-progress-label\"><span>Mastered</span><span class=\"ds-pct\">65%</span></div></div>",
+      "css": ".ds-deck-card { background: #161b27; border: 1px solid #252d3d; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; cursor: pointer; transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out; } .ds-deck-card:hover { border-color: #10b981; box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3); transform: translateY(-3px); } .ds-deck-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; } .ds-deck-title { font-family: Inter, system-ui, sans-serif; font-size: 18px; font-weight: 500; letter-spacing: -0.005em; line-height: 1.3; margin: 0; color: #f1f5f9; } .ds-deck-emoji { background: #1e2535; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; } .ds-deck-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; } .ds-badge { font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 500; background: #1e2535; color: #94a3b8; border: 1px solid #252d3d; border-radius: 9999px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; } .ds-badge--accent { background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3); } .ds-progress { background: #1e2535; border-radius: 9999px; height: 4px; overflow: hidden; } .ds-progress > span { background: linear-gradient(90deg, #10b981, #34d399); border-radius: inherit; height: 100%; display: block; transition: width 0.4s ease-out; } .ds-progress-label { font-family: Inter, system-ui, sans-serif; font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; } .ds-pct { color: #10b981; font-weight: 500; }"
+    },
+    {
+      "name": "Flip Card",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "The study moment. Click to flip. English word in accent green on the front; Ukrainian translation on the back.",
+      "html": "<div class=\"ds-flip-card\" onclick=\"this.classList.toggle('ds-flip-card--flipped')\"><div class=\"ds-flip-card-inner\"><div class=\"ds-flip-face ds-flip-face--front\"><span class=\"ds-flip-corner\">EN</span><p class=\"ds-flip-word\">ephemeral</p><span class=\"ds-phonetic\">/ɪˈfem.ər.əl/ <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polygon points=\"11 5 6 9 2 9 2 15 6 15 11 19 11 5\"/><path d=\"M15.54 8.46a5 5 0 010 7.07\"/></svg></span><p class=\"ds-flip-example\">The <b>ephemeral</b> beauty of cherry blossoms lasts only a week.</p></div><div class=\"ds-flip-face ds-flip-face--back\"><span class=\"ds-flip-corner\">UA</span><p class=\"ds-flip-word ds-flip-word--ua\">скороминущий</p><p class=\"ds-flip-example\">Що має тимчасовий або короткочасний характер.</p></div></div></div>",
+      "css": ".ds-flip-card { perspective: 1200px; cursor: pointer; width: 100%; max-width: 600px; height: 380px; } .ds-flip-card-inner { width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4,0,0.2,1); position: relative; } .ds-flip-card--flipped .ds-flip-card-inner { transform: rotateY(180deg); } .ds-flip-face { position: absolute; inset: 0; background: #161b27; border: 1px solid #252d3d; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 40px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.3); } .ds-flip-face--back { background: linear-gradient(180deg, #161b27, #1a2030); transform: rotateY(180deg); } .ds-flip-corner { position: absolute; top: 16px; right: 16px; font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; } .ds-flip-word { font-family: Inter, system-ui, sans-serif; font-size: 36px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1; margin: 0 0 12px; color: #10b981; } .ds-flip-word--ua { color: #f1f5f9; } .ds-phonetic { font-family: Inter, system-ui, sans-serif; font-size: 13px; color: #475569; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; } .ds-flip-example { font-family: Inter, system-ui, sans-serif; font-size: 15px; color: #94a3b8; font-style: italic; line-height: 1.5; max-width: 460px; margin: 0; } .ds-flip-example b { color: #f1f5f9; background: rgba(16,185,129,0.18); border-radius: 4px; padding: 0 4px; font-style: normal; font-weight: 500; }"
+    },
+    {
+      "name": "Quiz Option Card",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "A multiple-choice answer card. Communicates correct/wrong state the instant the user commits.",
+      "html": "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px\"><button class=\"ds-option-card\"><span class=\"ds-option-key\">A</span><span class=\"ds-option-text\">тимчасовий</span><span class=\"ds-option-feedback\">✓</span></button><button class=\"ds-option-card ds-option-card--correct\"><span class=\"ds-option-key\">B</span><span class=\"ds-option-text\">скороминущий</span><span class=\"ds-option-feedback\">✓</span></button><button class=\"ds-option-card ds-option-card--wrong\"><span class=\"ds-option-key\">C</span><span class=\"ds-option-text\">постійний</span><span class=\"ds-option-feedback\">✗</span></button><button class=\"ds-option-card ds-option-card--disabled\"><span class=\"ds-option-key\">D</span><span class=\"ds-option-text\">нескінченний</span><span class=\"ds-option-feedback\">✓</span></button></div>",
+      "css": ".ds-option-card { appearance: none; background: #161b27; border: 1px solid #252d3d; border-radius: 10px; color: #f1f5f9; font-family: Inter, system-ui, sans-serif; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 64px; padding: 18px 16px; width: 100%; transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out; } .ds-option-card:hover { background: #1e2535; border-color: #1e2535; } .ds-option-key { background: #1e2535; border: 1px solid #252d3d; border-radius: 6px; width: 22px; height: 22px; color: #475569; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; } .ds-option-text { flex: 1; } .ds-option-feedback { opacity: 0; font-size: 18px; transition: opacity 0.2s; } .ds-option-card--correct { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #22c55e; } .ds-option-card--correct .ds-option-feedback { opacity: 1; color: #22c55e; } .ds-option-card--wrong { background: rgba(239,68,68,0.15); border-color: #ef4444; color: #ef4444; animation: ds-shake 0.4s cubic-bezier(0.36,0.07,0.19,0.97); } .ds-option-card--wrong .ds-option-feedback { opacity: 1; color: #ef4444; } .ds-option-card--disabled { pointer-events: none; opacity: 0.5; } @keyframes ds-shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "button-primary",
+      "description": "Inline metadata tag. Pill-shaped, three semantic variants.",
+      "html": "<div style=\"display:flex;gap:8px;align-items:center\"><span class=\"ds-badge\">48 words</span><span class=\"ds-badge ds-badge--accent\">12 due</span><span class=\"ds-badge ds-badge--success\">Mastered</span><span class=\"ds-badge ds-badge--warn\">Review</span></div>",
+      "css": ".ds-badge { font-family: Inter, system-ui, sans-serif; font-size: 11px; font-weight: 500; line-height: 1.4; background: #1e2535; color: #94a3b8; border: 1px solid #252d3d; border-radius: 9999px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; } .ds-badge--accent { background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3); } .ds-badge--success { background: rgba(34,197,94,0.15); color: #22c55e; border-color: rgba(34,197,94,0.3); } .ds-badge--warn { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Focused Night Session",
+    "overview": "Late evening. One browser tab. Vocabulary lists in front of you. The interface is the ambient light: always present, never competing with the content it holds. This system is built for a single user who knows what they want: to review vocabulary efficiently and leave. Every surface is subordinate to the word on the screen.\n\nThe deep indigo charcoal backgrounds create a contained, low-stimulation environment. The single emerald accent communicates presence, progress, and correctness without demanding attention. When you look at this interface, you notice the vocabulary first. The UI second, if at all.\n\nThis system rejects educational software language: no streaks, no mascots, no confetti, no gamified reward loops. It also rejects generic product darkness: no gradient hero panels, no neon accents, no identical icon-grid stat banners. Depth comes from tonal surface steps, not decoration. Feedback comes from color and shape, not celebration choreography.",
+    "keyCharacteristics": [
+      "Single emerald accent; used sparingly across all surfaces",
+      "Four tonal surface levels replace shadows for structural depth",
+      "Inter only, hierarchy through scale and weight contrast alone",
+      "Animations: state-driven, short, ease-out; never choreographed",
+      "Keyboard-first patterns visible throughout"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule",        "body": "The emerald accent (#10b981) appears on no more than 15% of any given screen. Its scarcity is its power. Every additional use must answer: 'Is this the most important thing on this screen right now?'", "section": "colors" },
+      { "name": "The Status-Only Rule",      "body": "Success (#22c55e), danger (#ef4444), and warning (#f59e0b) are reserved strictly for feedback states: correct, incorrect, caution. They are never decorative accents or brand color substitutes.", "section": "colors" },
+      { "name": "The Weight Bridge Rule",    "body": "Each typographic step must differ by at least 1.25x in size or one full weight grade. A heading at 18px/500 adjacent to body at 15px/400 is too flat to read as hierarchy.", "section": "typography" },
+      { "name": "The Single Face Rule",      "body": "Inter carries the full typographic system. No secondary or decorative typeface is added. Emphasis through weight and size, never through font-family switching.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule",  "body": "A surface at rest never has a box-shadow unless it is a floating layer (modal, toast) or has the ambient-resting exception (primary button). Hover and focus add shadows; presence does not.", "section": "elevation" },
+      { "name": "The Glow-for-State Rule",   "body": "Colored glow rings (accent, success, danger) are state indicators, not decorative treatments. A glowing element is telling the user something: focused, correct, or wrong.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the emerald accent on no more than 15% of any given screen. Count before adding.",
+      "Do let the English word dominate at 36px/600 in accent color during study sessions.",
+      "Do use tonal surface steps (base to surface to elevated to subtle) for structural depth before reaching for shadows.",
+      "Do keep all transitions at 200ms ease-in-out; use cubic-bezier(0.4,0,0.2,1) for entrances.",
+      "Do surface keyboard shortcuts as kbd elements wherever they exist.",
+      "Do use uppercase labels (11px, 0.08em tracking) only for column headers, status tags, and hints.",
+      "Do match shadow weight to height: shadow-sm for resting interactive, shadow-md for hover lift, shadow-lg for overlays.",
+      "Do keep body text at or below 65-75ch per line on content-reading surfaces.",
+      "Do use the emerald tint highlight (rgba(16,185,129,0.18), 4px radius) to mark the target word in example sentences."
+    ],
+    "donts": [
+      "Don't add streaks, mascots, confetti, or gamified reward loops. Learning is the reward. (Anti-reference: Duolingo.)",
+      "Don't add gradient hero stat panels, word-count banners, or identical icon-grid card layouts. (Anti-reference: generic SaaS.)",
+      "Don't use border-left or border-right greater than 1px as a colored accent stripe on cards or callouts.",
+      "Don't use gradient text (background-clip: text). Single solid color only; emphasis through weight or size.",
+      "Don't use success, danger, or warning colors as decorative accents. State only.",
+      "Don't add box-shadow to resting, non-interactive elements.",
+      "Don't add a second typeface.",
+      "Don't animate layout properties (height, width, padding). Animate transform and opacity only.",
+      "Don't nest cards.",
+      "Don't use modals as the first solution for inline actions."
+    ]
+  }
+}
