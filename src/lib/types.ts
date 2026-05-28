@@ -16,6 +16,7 @@ export interface Deck {
   id: string
   user_id: string
   name: string
+  emoji: string
   folder_id: string | null
   share_token: string | null
   created_at: string

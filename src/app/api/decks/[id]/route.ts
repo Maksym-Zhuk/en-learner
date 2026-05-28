@@ -19,6 +19,7 @@ export async function GET(
         id: decks.id,
         user_id: decks.user_id,
         name: decks.name,
+        emoji: decks.emoji,
         folder_id: decks.folder_id,
         share_token: decks.share_token,
         created_at: decks.created_at,
@@ -33,7 +34,7 @@ export async function GET(
 
     // Check if accessible via group membership (deck shared directly or via folder)
     const shared = (await db.execute(sql`
-      SELECT d.id, d.user_id, d.name, d.folder_id, d.share_token, d.created_at,
+      SELECT d.id, d.user_id, d.name, d.emoji, d.folder_id, d.share_token, d.created_at,
              COUNT(c.id)::int AS card_count
       FROM decks d
       LEFT JOIN cards c ON c.deck_id = d.id
@@ -71,11 +72,17 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const folderId: string | null = body.folder_id ?? null
+    const patch: Record<string, unknown> = {}
+    if ('folder_id' in body) patch.folder_id = body.folder_id ?? null
+    if (typeof body.name === 'string' && body.name.trim()) patch.name = body.name.trim()
+    if (typeof body.emoji === 'string' && body.emoji.trim()) patch.emoji = body.emoji.trim()
+
+    if (Object.keys(patch).length === 0)
+      return NextResponse.json({ error: 'Немає полів для оновлення' }, { status: 400 })
 
     const [deck] = await db
       .update(decks)
-      .set({ folder_id: folderId })
+      .set(patch)
       .where(and(eq(decks.id, id), eq(decks.user_id, user.userId)))
       .returning()
 

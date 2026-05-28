@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { useToast } from '@/components/ToastProvider'
 
@@ -52,13 +53,13 @@ export default function GroupFolderPage() {
       <Navbar />
       <main className="max-w-[1100px] flex-1 w-full mx-auto px-6 pt-6 pb-16">
         <div className="flex items-center gap-2 text-text-secondary text-[13px] mb-5">
-          <a className="cursor-pointer hover:text-text-primary inline-flex items-center gap-1" onClick={() => router.push('/groups')}>
+          <Link href="/groups" className="hover:text-text-primary inline-flex items-center gap-1">
             <i className="ti ti-users-group" /> Групи
-          </a>
+          </Link>
           <i className="ti ti-chevron-right" />
-          <a className="cursor-pointer hover:text-text-primary" onClick={() => router.push(`/group/${groupId}`)}>
+          <Link href={`/group/${groupId}`} className="hover:text-text-primary">
             {groupName || '…'}
-          </a>
+          </Link>
           <i className="ti ti-chevron-right" />
           <span className="text-text-primary">{data.folder.name}</span>
         </div>
@@ -80,10 +81,10 @@ export default function GroupFolderPage() {
         ) : (
           <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
             {data.decks.map((deck) => (
-              <article
+              <Link
                 key={deck.id}
-                className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
-                onClick={() => router.push(`/deck/${deck.id}`)}
+                href={`/deck/${deck.id}`}
+                className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
               >
                 <div className="flex justify-between items-start gap-2">
                   <h3 className="text-[18px] font-medium leading-tight m-0">{deck.name}</h3>
@@ -93,18 +94,18 @@ export default function GroupFolderPage() {
                 <div className="flex gap-2 mt-1">
                   <button
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-accent text-white text-[12px] font-medium cursor-pointer transition-all hover:bg-accent-hover"
-                    onClick={(e) => { e.stopPropagation(); router.push(`/deck/${deck.id}/study`) }}
+                    onClick={(e) => { e.preventDefault(); router.push(`/deck/${deck.id}/study`) }}
                   >
                     <i className="ti ti-cards text-sm" /> Картки
                   </button>
                   <button
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-bg-elevated border border-bg-subtle text-text-primary text-[12px] font-medium cursor-pointer transition-all hover:bg-bg-subtle"
-                    onClick={(e) => { e.stopPropagation(); router.push(`/deck/${deck.id}/quiz/multiple`) }}
+                    onClick={(e) => { e.preventDefault(); router.push(`/deck/${deck.id}/quiz/multiple`) }}
                   >
                     <i className="ti ti-list-check text-sm" /> Тест
                   </button>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         )}

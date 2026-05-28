@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ToastProvider } from '@/components/ToastProvider'
+import { LocaleProvider } from '@/lib/i18n'
 
 export const metadata: Metadata = {
   title: 'EN Learner — Флеш-картки',
@@ -13,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="uk">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -28,7 +29,9 @@ export default function RootLayout({
       </head>
       <body>
         <ToastProvider>
-          {children}
+          <LocaleProvider>
+            {children}
+          </LocaleProvider>
         </ToastProvider>
       </body>
     </html>

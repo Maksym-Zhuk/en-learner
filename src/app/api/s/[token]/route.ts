@@ -16,7 +16,7 @@ export async function GET(
 
   try {
     const [deck] = await db
-      .select({ id: decks.id, name: decks.name, created_at: decks.created_at })
+      .select({ id: decks.id, name: decks.name, emoji: decks.emoji, created_at: decks.created_at })
       .from(decks)
       .where(eq(decks.share_token, token))
       .limit(1)

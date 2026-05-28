@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { useToast } from '@/components/ToastProvider'
 import { Card } from '@/lib/types'
+import { useLocale } from '@/lib/i18n'
 
 type BackMode = 'ua' | 'def'
 type QuizMode = 'multiple' | 'write' | 'match'
@@ -30,6 +32,7 @@ const answerOf = (c: Card, mode: BackMode) => (mode === 'ua' ? c.translation_uk 
 
 // ─── Score ring summary ───────────────────────────────
 function Summary({ correct, total, onRestart, onBack }: { correct: number; total: number; onRestart: () => void; onBack: () => void }) {
+  const { t } = useLocale()
   const score = total > 0 ? Math.round(correct / total * 100) : 0
   const r = 68, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100)
   return (
@@ -42,28 +45,28 @@ function Summary({ correct, total, onRestart, onBack }: { correct: number; total
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[32px] font-bold text-text-primary">{score}%</span>
-          <small className="text-[12px] text-text-muted">точність</small>
+          <small className="text-[12px] text-text-muted">{t('quiz.accuracy')}</small>
         </div>
       </div>
-      <h2 className="text-[22px] font-semibold text-text-primary mb-2">Результат тесту</h2>
-      <p className="text-text-secondary text-[14px] mb-6">Правильних відповідей з першої спроби: {correct} з {total}.</p>
-      <div className="grid grid-cols-3 gap-3 mx-auto mb-7 max-w-[480px]">
+      <h2 className="text-[22px] font-semibold text-text-primary mb-2">{t('quiz.result')}</h2>
+      <p className="text-text-secondary text-[14px] mb-6">{t('quiz.resultDesc', { correct, total })}</p>
+      <div className="grid grid-cols-3 gap-3 mx-auto mb-7 max-w-[480px] max-sm:grid-cols-1">
         <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
           <div className="text-[22px] font-bold text-success">{correct}</div>
-          <div className="text-[12px] text-text-muted mt-1">Правильно</div>
+          <div className="text-[12px] text-text-muted mt-1">{t('quiz.correct')}</div>
         </div>
         <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
           <div className="text-[22px] font-bold text-danger">{total - correct}</div>
-          <div className="text-[12px] text-text-muted mt-1">Помилки</div>
+          <div className="text-[12px] text-text-muted mt-1">{t('quiz.errors')}</div>
         </div>
         <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
           <div className="text-[22px] font-bold text-text-primary">{total}</div>
-          <div className="text-[12px] text-text-muted mt-1">Всього</div>
+          <div className="text-[12px] text-text-muted mt-1">{t('quiz.total')}</div>
         </div>
       </div>
       <div className="flex items-center justify-center gap-3">
-        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={onBack}>До колоди</button>
-        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={onRestart}><i className="ti ti-refresh" /> Ще раз</button>
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={onBack}>{t('quiz.backToDeck')}</button>
+        <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={onRestart}><i className="ti ti-refresh" /> {t('quiz.retry')}</button>
       </div>
     </div>
   )
@@ -71,6 +74,7 @@ function Summary({ correct, total, onRestart, onBack }: { correct: number; total
 
 // ─── Multiple choice ──────────────────────────────────
 function MultipleChoice({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
+  const { t } = useLocale()
   const [queue, setQueue] = useState<Card[]>(() => shuffle(cards))
   const [idx, setIdx] = useState(0)
   const [options, setOptions] = useState<string[]>([])
@@ -113,7 +117,7 @@ function MultipleChoice({ cards, mode, onFinish }: { cards: Card[]; mode: BackMo
       <StudyHeaderlessProgress progress={progress} />
       <div className="flex-1 px-6 py-12 flex flex-col items-center">
         <div className="w-full max-w-[560px]">
-          <div className="text-[13px] text-text-muted mb-2">{mode === 'ua' ? 'Що означає це слово?' : 'Оберіть визначення'}</div>
+          <div className="text-[13px] text-text-muted mb-2">{mode === 'ua' ? t('quiz.showUA') : t('quiz.showDef')}</div>
           <div className="text-[28px] font-semibold text-text-primary mb-2">{card.word}</div>
           {card.example_en && <div className="text-[14px] text-text-secondary italic mb-6">{card.example_en}</div>}
           <div className="grid grid-cols-1 gap-3">
@@ -141,6 +145,7 @@ function MultipleChoice({ cards, mode, onFinish }: { cards: Card[]; mode: BackMo
 
 // ─── Write mode ───────────────────────────────────────
 function WriteMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
+  const { t } = useLocale()
   const [queue, setQueue] = useState<Card[]>(() => shuffle(cards))
   const [idx, setIdx] = useState(0)
   const [input, setInput] = useState('')
@@ -199,17 +204,17 @@ function WriteMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; o
                   feedback === 'wrong' ? 'border-danger shadow-[0_0_0_1px_theme(colors.danger),0_0_20px_rgba(239,68,68,0.15)] [animation:shake_400ms_ease]' :
                   'border-bg-subtle'
                 }`}
-                placeholder={mode === 'ua' ? 'Введіть переклад українською…' : 'Type the English definition…'}
+                placeholder={t('quiz.yourAnswer')}
                 value={input} onChange={(e) => setInput(e.target.value)} disabled={!!feedback}
               />
-              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 bg-accent text-white rounded-[6px] cursor-pointer disabled:opacity-40" disabled={!input.trim() || !!feedback}><i className="ti ti-arrow-right" /></button>
+              <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-10 h-10 bg-accent text-white rounded-[6px] cursor-pointer disabled:opacity-40" disabled={!input.trim() || !!feedback}><i className="ti ti-arrow-right" /></button>
             </div>
           </form>
           <div className={`mt-4 text-[14px] transition-opacity ${feedback ? 'opacity-100' : 'opacity-0'}`}>
-            {feedback === 'correct' && <span className="text-success">✓ Правильно!</span>}
-            {feedback === 'wrong' && reveal && <span className="text-danger">✕ Правильна відповідь: <span className="font-semibold">{reveal}</span></span>}
+            {feedback === 'correct' && <span className="text-success">✓ {t('quiz.correct_feedback')}</span>}
+            {feedback === 'wrong' && reveal && <span className="text-danger">✕ {t('quiz.correctAnswer')}: <span className="font-semibold">{reveal}</span></span>}
           </div>
-          <div className="mt-6 text-[12px] text-text-muted"><span><kbd className="bg-bg-elevated border border-bg-subtle rounded px-1.5 py-0.5 text-[11px]">Enter</kbd> перевірити</span></div>
+          <div className="mt-6 text-[12px] text-text-muted"><span><kbd className="bg-bg-elevated border border-bg-subtle rounded px-1.5 py-0.5 text-[11px]">Enter</kbd> {t('quiz.check')}</span></div>
         </div>
       </div>
     </>
@@ -219,6 +224,7 @@ function WriteMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; o
 // ─── Match mode ───────────────────────────────────────
 interface MItem { id: string; text: string; type: 'word' | 'tr'; pairId: string; matched: boolean }
 function MatchMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; onFinish: (c: number, t: number) => void }) {
+  const { t } = useLocale()
   const BATCH = 6
   const [batchStart, setBatchStart] = useState(0)
   const [items, setItems] = useState<MItem[]>([])
@@ -276,8 +282,8 @@ function MatchMode({ cards, mode, onFinish }: { cards: Card[]; mode: BackMode; o
       <StudyHeaderlessProgress progress={progress} />
       <div className="flex-1 px-6 py-12 flex flex-col items-center">
         <div className="w-full max-w-[640px]">
-          <h2 className="text-[20px] font-semibold text-text-primary mb-1">З'єднай слова з {mode === 'ua' ? 'перекладами' : 'визначеннями'}</h2>
-          <div className="text-[13px] text-text-muted mb-6">Пара {matched} / {pairsCount} · всього ✓ {totalCorrect}</div>
+          <h2 className="text-[20px] font-semibold text-text-primary mb-1">{t('quiz.matchTitle')}</h2>
+          <div className="text-[13px] text-text-muted mb-6">{t('quiz.matchDesc')}</div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-3">{items.filter((i) => i.type === 'word').map((i) => (
               <button key={i.id} className={getPillClass(i)} onClick={() => handleSelect(i.id)} disabled={i.matched}>{i.text}</button>))}</div>
@@ -306,6 +312,7 @@ export default function QuizPage() {
   const deckId = params.id as string
   const mode = params.mode as QuizMode
   const { showToast } = useToast()
+  const { t } = useLocale()
 
   const [cards, setCards] = useState<Card[]>([])
   const [loading, setLoading] = useState(true)
@@ -327,10 +334,10 @@ export default function QuizPage() {
       const deckData = await deckRes.json()
       setDeckName(deckData.name)
       const cardsData: Card[] = await cardsRes.json()
-      if (mode === 'multiple' && cardsData.length < 4) { showToast('Потрібно мінімум 4 картки', 'error'); router.push(`/deck/${deckId}`); return }
-      if (cardsData.length < 1) { showToast('У колоді немає карток', 'error'); router.push(`/deck/${deckId}`); return }
+      if (mode === 'multiple' && cardsData.length < 4) { showToast(t('deck.needMin4'), 'error'); router.push(`/deck/${deckId}`); return }
+      if (cardsData.length < 1) { showToast(t('study.noCards'), 'error'); router.push(`/deck/${deckId}`); return }
       setCards(cardsData)
-    } catch { showToast('Помилка завантаження', 'error') } finally { setLoading(false) }
+    } catch { showToast(t('study.loadError'), 'error') } finally { setLoading(false) }
   }
 
   function handleFinish(c: number, t: number) {
@@ -354,15 +361,15 @@ export default function QuizPage() {
   return (
     <div className="bg-bg-base min-h-screen flex flex-col">
       <div className="px-6 pt-3 pb-2">
-        <div className="flex items-center justify-between">
-          <a className="flex items-center gap-2 text-text-secondary text-[13px] cursor-pointer hover:text-text-primary transition-colors" onClick={() => router.push(`/deck/${deckId}`)}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <Link href={`/deck/${deckId}`} className="flex items-center gap-2 text-text-secondary text-[13px] hover:text-text-primary transition-colors">
             <i className="ti ti-arrow-left" /> <span className="font-medium">{deckName}</span>
-          </a>
+          </Link>
           {!finished && (
             <div className="grid grid-cols-2 bg-bg-elevated border border-bg-subtle rounded-full p-1 relative" style={{ width: 240, marginBottom: 0 }}>
               <div className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-accent rounded-full transition-transform duration-240 shadow-[0_4px_12px_rgba(16,185,129,0.4)] z-0" style={backMode === 'def' ? { transform: 'translateX(100%)' } : undefined} />
-              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'ua' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('ua'); setKey((k) => k + 1) }}>Переклад</button>
-              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'def' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('def'); setKey((k) => k + 1) }}>Пояснення</button>
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'ua' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('ua'); setKey((k) => k + 1) }}>{t('study.translation')}</button>
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'def' ? 'text-white' : 'text-text-secondary'}`} onClick={() => { setBackMode('def'); setKey((k) => k + 1) }}>{t('study.definition')}</button>
             </div>
           )}
         </div>

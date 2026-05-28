@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
+import { useLocale } from '@/lib/i18n'
 
 function LookupPageInner() {
   const router = useRouter()
+  const { t } = useLocale()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [activeIdx, setActiveIdx] = useState(-1)
@@ -44,8 +46,8 @@ function LookupPageInner() {
   useEffect(() => {
     setActiveIdx(-1)
     if (!query.trim()) { setSuggestions([]); setOpen(false); return }
-    const t = setTimeout(() => fetchSuggestions(query), 200)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => fetchSuggestions(query), 200)
+    return () => clearTimeout(timer)
   }, [query, fetchSuggestions])
 
   function navigate(word: string) {
@@ -80,11 +82,11 @@ function LookupPageInner() {
             className="text-text-secondary transition-colors cursor-pointer hover:text-text-primary"
             onClick={() => router.back()}
           >
-            <i className="ti ti-arrow-left" /> Назад
+            <i className="ti ti-arrow-left" /> {t('lookup.back')}
           </a>
         </div>
 
-        <h1 className="text-[24px] font-semibold text-text-primary mb-6">Пошук слова</h1>
+        <h1 className="text-[24px] font-semibold text-text-primary mb-6">{t('lookup.title')}</h1>
 
         <div className="relative" ref={containerRef}>
           <div
@@ -96,7 +98,7 @@ function LookupPageInner() {
             <input
               ref={inputRef}
               className="flex-1 bg-transparent border-none outline-none text-[18px] text-text-primary py-4 font-[inherit] placeholder:text-text-muted"
-              placeholder="Введіть англійське слово…"
+              placeholder={t('lookup.searchPlaceholder')}
               value={query}
               autoComplete="off"
               spellCheck={false}
@@ -146,7 +148,7 @@ function LookupPageInner() {
         {!query && (
           <div className="px-5 py-8 text-center text-text-muted text-[13px] mt-12 flex flex-col items-center gap-2">
             <i className="ti ti-keyboard text-[28px]" />
-            Почніть вводити слово — з&apos;являться підказки
+            {t('lookup.hint')}
           </div>
         )}
       </main>

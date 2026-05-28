@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import FlipCard from '@/components/FlipCard'
 import { useToast } from '@/components/ToastProvider'
 import { Card } from '@/lib/types'
+import { useLocale } from '@/lib/i18n'
 
 type BackMode = 'ua' | 'def'
 
@@ -22,6 +24,7 @@ export default function StudyPage() {
   const params = useParams()
   const deckId = params.id as string
   const { showToast } = useToast()
+  const { t } = useLocale()
 
   const [cards, setCards] = useState<Card[]>([])
   const [queue, setQueue] = useState<Card[]>([])
@@ -41,14 +44,14 @@ export default function StudyPage() {
     try {
       const [deckRes, cardsRes] = await Promise.all([fetch(`/api/decks/${deckId}`), fetch(`/api/decks/${deckId}/cards`)])
       if (deckRes.status === 401) { router.push('/login'); return }
-      if (!deckRes.ok) { showToast('Колода не знайдена', 'error'); router.push('/home'); return }
+      if (!deckRes.ok) { showToast(t('study.deckNotFound'), 'error'); router.push('/home'); return }
       const deckData = await deckRes.json()
       setDeckName(deckData.name)
       const cardsData: Card[] = await cardsRes.json()
-      if (!cardsData.length) { showToast('У колоді немає карток', 'error'); router.push(`/deck/${deckId}`); return }
+      if (!cardsData.length) { showToast(t('study.noCards'), 'error'); router.push(`/deck/${deckId}`); return }
       const sh = shuffle(cardsData)
       setCards(sh); setQueue(sh)
-    } catch { showToast('Помилка завантаження', 'error') } finally { setLoading(false) }
+    } catch { showToast(t('study.loadError'), 'error') } finally { setLoading(false) }
   }
 
   function recordSession(correctCount: number, totalCount: number) {
@@ -117,28 +120,28 @@ export default function StudyPage() {
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-[32px] font-bold text-text-primary">{score}%</span>
-              <small className="text-[12px] text-text-muted">точність</small>
+              <small className="text-[12px] text-text-muted">{t('quiz.accuracy')}</small>
             </div>
           </div>
-          <h2 className="text-[22px] font-semibold text-text-primary mb-2">Чудова робота!</h2>
-          <p className="text-text-secondary text-[14px] mb-6">Ви пройшли всю колоду «{deckName}».</p>
+          <h2 className="text-[22px] font-semibold text-text-primary mb-2">{t('study.doneTitle')}</h2>
+          <p className="text-text-secondary text-[14px] mb-6">{t('study.doneDesc', { total: queue.length })}</p>
           <div className="grid grid-cols-3 gap-3 mx-auto mb-7 max-w-[480px]">
             <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
               <div className="text-[22px] font-bold text-success">{known}</div>
-              <div className="text-[12px] text-text-muted mt-1">Знав</div>
+              <div className="text-[12px] text-text-muted mt-1">{t('study.knew')}</div>
             </div>
             <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
               <div className="text-[22px] font-bold text-danger">{unknown}</div>
-              <div className="text-[12px] text-text-muted mt-1">Не знав</div>
+              <div className="text-[12px] text-text-muted mt-1">{t('study.didntKnow')}</div>
             </div>
             <div className="bg-bg-surface border border-bg-subtle rounded-[10px] p-3.5">
               <div className="text-[22px] font-bold text-text-primary">{total}</div>
-              <div className="text-[12px] text-text-muted mt-1">Всього</div>
+              <div className="text-[12px] text-text-muted mt-1">{t('quiz.total')}</div>
             </div>
           </div>
           <div className="flex items-center justify-center gap-3">
-            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={() => router.push(`/deck/${deckId}`)}>До колоди</button>
-            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={restart}><i className="ti ti-refresh" /> Ще раз</button>
+            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-bg-subtle text-text-primary rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-bg-elevated" onClick={() => router.push(`/deck/${deckId}`)}>{t('study.backToDeck')}</button>
+            <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={restart}><i className="ti ti-refresh" /> {t('study.restart')}</button>
           </div>
         </div>
       </div>
@@ -154,15 +157,15 @@ export default function StudyPage() {
         <div className="h-1 bg-bg-elevated rounded-full overflow-hidden">
           <span className="block h-full bg-gradient-to-r from-accent to-emerald-300 rounded-[inherit] transition-[width_400ms_ease-out]" style={{ width: `${progress}%` }} />
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <a className="flex items-center gap-2 text-text-secondary text-[13px] cursor-pointer hover:text-text-primary transition-colors" onClick={() => router.push(`/deck/${deckId}`)}>
+        <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
+          <Link href={`/deck/${deckId}`} className="flex items-center gap-2 text-text-secondary text-[13px] hover:text-text-primary transition-colors">
             <i className="ti ti-arrow-left" /> <span className="font-medium">{deckName}</span>
-          </a>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          </Link>
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="grid grid-cols-2 bg-bg-elevated border border-bg-subtle rounded-full p-1 relative" style={{ width: 240, marginBottom: 0 }}>
               <div className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-accent rounded-full transition-transform duration-240 shadow-[0_4px_12px_rgba(16,185,129,0.4)] z-0" style={backMode === 'def' ? { transform: 'translateX(100%)' } : undefined} />
-              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'ua' ? 'text-white' : 'text-text-secondary'}`} onClick={() => setBackMode('ua')}>Переклад</button>
-              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'def' ? 'text-white' : 'text-text-secondary'}`} onClick={() => setBackMode('def')}>Пояснення</button>
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'ua' ? 'text-white' : 'text-text-secondary'}`} onClick={() => setBackMode('ua')}>{t('study.translation')}</button>
+              <button type="button" className={`relative z-10 bg-transparent border-none font-[inherit] text-[13px] font-medium h-9 cursor-pointer transition-colors ${backMode === 'def' ? 'text-white' : 'text-text-secondary'}`} onClick={() => setBackMode('def')}>{t('study.definition')}</button>
             </div>
             <span className="text-text-secondary text-[13px]"><i className="ti ti-check text-success" /> {known} · {unknown}</span>
           </div>
@@ -170,11 +173,11 @@ export default function StudyPage() {
       </div>
 
       <div className="flex-1 px-6 py-12 flex flex-col items-center">
-        <div className="text-[13px] text-text-muted mb-4">Картка {current + 1} з {queue.length}</div>
+        <div className="text-[13px] text-text-muted mb-4">{t('study.card')} {current + 1} {t('study.of')} {queue.length}</div>
         <FlipCard card={card} flipped={flipped} onClick={() => setFlipped((f) => !f)} backMode={backMode} />
         <div className={`mt-8 flex gap-3 transition-[opacity_300ms,transform_300ms] ${flipped ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
-          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-[rgba(239,68,68,0.3)] text-danger rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-[rgba(239,68,68,0.08)] hover:border-danger" onClick={handleDidntKnow}><i className="ti ti-x" /> Не знав</button>
-          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={handleKnew}><i className="ti ti-check" /> Знав</button>
+          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-transparent border border-[rgba(239,68,68,0.3)] text-danger rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-[rgba(239,68,68,0.08)] hover:border-danger" onClick={handleDidntKnow}><i className="ti ti-x" /> {t('study.didntKnow')}</button>
+          <button className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-accent text-white rounded-[10px] text-[13px] font-medium cursor-pointer transition-all hover:bg-accent-hover hover:-translate-y-px" onClick={handleKnew}><i className="ti ti-check" /> {t('study.knew')}</button>
         </div>
       </div>
     </div>

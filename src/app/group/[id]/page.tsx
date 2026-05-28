@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import { useToast } from '@/components/ToastProvider'
 import { DeckWithCount, Folder } from '@/lib/types'
@@ -202,7 +203,7 @@ export default function GroupPage() {
       <Navbar />
       <main className="max-w-[1100px] flex-1 w-full mx-auto px-6 pt-6 pb-16">
         <div className="flex items-center gap-2 text-text-secondary text-[13px] mb-5">
-          <a className="cursor-pointer hover:text-text-primary inline-flex items-center gap-1" onClick={() => router.push('/groups')}><i className="ti ti-users-group" /> Групи</a>
+          <Link href="/groups" className="hover:text-text-primary inline-flex items-center gap-1"><i className="ti ti-users-group" /> Групи</Link>
           <i className="ti ti-chevron-right" />
           <span className="text-text-primary">{group.name}</span>
         </div>
@@ -245,18 +246,18 @@ export default function GroupPage() {
             ) : (
               <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
                 {deckShares.map((s) => (
-                  <article key={s.id} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-accent" onClick={() => router.push(`/deck/${s.deck_id}`)}>
+                  <Link key={s.id} href={`/deck/${s.deck_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition-all duration-200 hover:-translate-y-0.5 hover:border-accent">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-[18px] font-medium leading-tight m-0">{s.deck_name}</h3>
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-bg-elevated text-base shrink-0">📘</div>
                     </div>
                     <span className="inline-flex w-fit items-center gap-1 text-[11px] font-medium rounded-full bg-bg-elevated text-text-secondary border border-bg-subtle py-[3px] px-2">Колода</span>
                     {canManage && (
-                      <div className="flex mt-1" onClick={(e) => e.stopPropagation()}>
-                        <button className={`${BTN_ICON} w-8 h-8 ml-auto hover:text-danger`} onClick={() => removeShare(s.id)} title="Прибрати з групи"><i className="ti ti-x text-sm" /></button>
+                      <div className="flex mt-1" onClick={(e) => e.preventDefault()}>
+                        <button className={`${BTN_ICON} w-9 h-9 ml-auto hover:text-danger`} onClick={(e) => { e.preventDefault(); removeShare(s.id) }} title="Прибрати з групи"><i className="ti ti-x text-sm" /></button>
                       </div>
                     )}
-                  </article>
+                  </Link>
                 ))}
               </div>
             )}
@@ -280,18 +281,18 @@ export default function GroupPage() {
             ) : (
               <div className="grid grid-cols-3 gap-4 max-md:grid-cols-2 max-sm:grid-cols-1">
                 {folderShares.map((s) => (
-                  <article key={s.id} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-accent" onClick={() => router.push(`/group/${groupId}/folder/${s.folder_id}`)}>
+                  <Link key={s.id} href={`/group/${groupId}/folder/${s.folder_id}`} className="bg-bg-surface border border-bg-subtle rounded-md p-[18px] flex flex-col gap-2.5 relative transition-all duration-200 hover:-translate-y-0.5 hover:border-accent">
                     <div className="flex justify-between items-start gap-2">
                       <h3 className="text-[18px] font-medium leading-tight m-0">{s.folder_name}</h3>
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-sm bg-bg-elevated text-base shrink-0">📁</div>
                     </div>
                     <span className="inline-flex w-fit items-center gap-1 text-[11px] font-medium rounded-full bg-bg-elevated text-text-secondary border border-bg-subtle py-[3px] px-2">Папка</span>
                     {canManage && (
-                      <div className="flex mt-1" onClick={(e) => e.stopPropagation()}>
-                        <button className={`${BTN_ICON} w-8 h-8 ml-auto hover:text-danger`} onClick={() => removeShare(s.id)} title="Прибрати з групи"><i className="ti ti-x text-sm" /></button>
+                      <div className="flex mt-1" onClick={(e) => e.preventDefault()}>
+                        <button className={`${BTN_ICON} w-9 h-9 ml-auto hover:text-danger`} onClick={(e) => { e.preventDefault(); removeShare(s.id) }} title="Прибрати з групи"><i className="ti ti-x text-sm" /></button>
                       </div>
                     )}
-                  </article>
+                  </Link>
                 ))}
               </div>
             )}
@@ -314,7 +315,7 @@ export default function GroupPage() {
                       <span className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white font-semibold text-[13px] bg-gradient-to-br from-accent to-teal-500">{m.email.slice(0, 2).toUpperCase()}</span>
                       <span className="flex-1 text-[13px]">{m.email}<small className="text-text-muted"> · {m.role}</small></span>
                       {canRemoveThis && (
-                        <button className={`${BTN_ICON} w-8 h-8 hover:text-danger`} title="Видалити з групи" onClick={() => removeMember(m.id)}>
+                        <button className={`${BTN_ICON} w-9 h-9 hover:text-danger`} title="Видалити з групи" onClick={() => removeMember(m.id)}>
                           <i className="ti ti-user-minus text-sm" />
                         </button>
                       )}
@@ -334,12 +335,12 @@ export default function GroupPage() {
                     <li key={inv.id} className="flex items-center gap-3 py-2">
                       <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-bg-elevated text-text-muted"><i className="ti ti-clock" /></span>
                       <span className="flex-1 text-[13px] truncate">{inv.email}<small className="text-text-muted"> · {inv.role}</small></span>
-                      <button className={`${BTN_ICON} w-8 h-8`} title="Скопіювати посилання"
+                      <button className={`${BTN_ICON} w-9 h-9`} title="Скопіювати посилання"
                         onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/invite/${inv.token}`); showToast('Посилання скопійовано', 'info') }}>
                         <i className="ti ti-link text-sm" />
                       </button>
                       {canManage && (
-                        <button className={`${BTN_ICON} w-8 h-8 hover:text-danger`} title="Скасувати запрошення"
+                        <button className={`${BTN_ICON} w-9 h-9 hover:text-danger`} title="Скасувати запрошення"
                           onClick={() => revokeInvitation(inv.id)}>
                           <i className="ti ti-x text-sm" />
                         </button>
@@ -407,17 +408,22 @@ function Empty({ icon, title, sub }: { icon: string; title: string; sub: string 
 }
 
 function Modal({ title, icon, onClose, children }: { title: string; icon: string; onClose: () => void; children: React.ReactNode }) {
+  const modalRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+  useEffect(() => {
+    const el = modalRef.current?.querySelector<HTMLElement>('input, button, [tabindex]:not([tabindex="-1"])')
+    el?.focus()
+  }, [])
   return (
     <div className="fixed inset-0 bg-[rgba(15,17,23,0.65)] backdrop-blur-[8px] flex items-start justify-center pt-20 px-6 pb-6 z-[100] [animation:fadeIn_200ms_ease-out]" onClick={onClose}>
-      <div className="relative w-full max-w-[460px] bg-bg-surface border border-bg-subtle rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden [animation:scaleIn_280ms_ease]" onClick={(e) => e.stopPropagation()}>
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="group-edit-modal-title" className="relative w-full max-w-[460px] bg-bg-surface border border-bg-subtle rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] overflow-hidden [animation:scaleIn_280ms_ease]" onClick={(e) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-bg-subtle flex items-center gap-3">
           <i className={`ti ${icon} text-text-muted text-lg`} />
-          <span className="flex-1 text-text-primary text-[18px] font-medium">{title}</span>
+          <span id="group-edit-modal-title" className="flex-1 text-text-primary text-[18px] font-medium">{title}</span>
           <button className="bg-transparent border-none text-text-muted cursor-pointer p-1 rounded-[6px] hover:text-text-primary hover:bg-bg-elevated" onClick={onClose}><i className="ti ti-x" /></button>
         </div>
         <div className="p-5">{children}</div>

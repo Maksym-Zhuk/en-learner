@@ -7,6 +7,7 @@
   --color-bg-surface: #161B27;
   --color-bg-elevated: #1E2535;
   --color-bg-subtle: #252D3D;
+  --color-bg-deep: #1a2030;
   --color-accent: #10B981;
   --color-accent-hover: #059669;
   --color-success: #22C55E;
@@ -40,6 +41,7 @@
   --bg-surface:#161b27;
   --bg-elevated:#1e2535;
   --bg-subtle:#252d3d;
+  --bg-deep:#1a2030;
   --accent:#10b981;
   --accent-hover:#059669;
   --accent-glow:#10b98126;
@@ -132,7 +134,7 @@ button,input {
   font-family:inherit;
   font-size:var(--text-sm);
   cursor:pointer;
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), box-shadow var(--t), transform var(--t), color var(--t), opacity var(--t);
   -webkit-user-select:none;
   user-select:none;
   white-space:nowrap;
@@ -220,7 +222,7 @@ button,input {
   color:var(--text-primary);
   font:inherit;
   font-size:var(--text-base);
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), color var(--t), transform var(--t);
   outline:none;
   padding:18px 16px 6px 44px
 }
@@ -381,7 +383,7 @@ button,input {
   border-radius:var(--radius-md);
   color:var(--text-secondary);
   font-size:var(--text-sm);
-  transition:all var(--t);
+  transition:color var(--t), background var(--t);
   cursor:pointer;
   align-items:center;
   gap:6px;
@@ -411,7 +413,7 @@ button,input {
   border-radius:var(--radius-md);
   color:var(--text-muted);
   font-size:var(--text-sm);
-  transition:all var(--t);
+  transition:border-color var(--t), color var(--t);
   cursor:text;
   align-items:center;
   gap:8px;
@@ -568,7 +570,7 @@ button,input {
   font:inherit;
   font-size:var(--text-sm);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t), background var(--t);
   justify-content:center;
   align-items:center;
   gap:8px;
@@ -663,7 +665,7 @@ button,input {
   background:var(--bg-surface);
   border:1px solid var(--bg-subtle);
   border-radius:var(--radius-md);
-  transition:all var(--t);
+  transition:border-color var(--t), box-shadow var(--t), transform var(--t);
   cursor:pointer;
   flex-direction:column;
   gap:10px;
@@ -674,7 +676,8 @@ button,input {
 .deck-card:hover {
   box-shadow:var(--shadow-md);
   border-color:var(--accent);
-  transform:translateY(-3px)
+  transform:translateY(-3px);
+  will-change:transform
 }
 .deck-card .deck-head {
   justify-content:space-between;
@@ -775,7 +778,7 @@ button,input {
   cursor:pointer;
   width:56px;
   height:56px;
-  transition:all var(--t);
+  transition:background var(--t), transform var(--t), box-shadow var(--t);
   z-index:40;
   border:0;
   justify-content:center;
@@ -791,7 +794,8 @@ button,input {
 }
 .fab:hover {
   background:var(--accent-hover);
-  transform:translateY(-2px)scale(1.04)
+  transform:translateY(-2px)scale(1.04);
+  will-change:transform
 }
 .crumbs {
   color:var(--text-secondary);
@@ -886,7 +890,7 @@ button,input {
   border:1px solid var(--bg-subtle);
   border-radius:var(--radius-md);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t), box-shadow var(--t), transform var(--t);
   text-align:left;
   flex-direction:column;
   gap:10px;
@@ -898,7 +902,8 @@ button,input {
 .mode-tile:hover {
   border-color:var(--accent);
   box-shadow:var(--shadow-md);
-  transform:translateY(-3px)
+  transform:translateY(-3px);
+  will-change:transform
 }
 .mode-tile .mode-icon {
   border-radius:var(--radius-sm);
@@ -937,7 +942,7 @@ button,input {
 .mode-tile .mode-arrow {
   color:var(--text-muted);
   opacity:0;
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), color var(--t), transform var(--t);
   position:absolute;
   bottom:14px;
   right:14px;
@@ -1003,7 +1008,7 @@ button,input {
   color:var(--text-muted);
   cursor:pointer;
   border-radius:var(--radius-sm);
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), color var(--t), transform var(--t);
   background:0 0;
   border:0;
   padding:6px
@@ -1109,6 +1114,7 @@ button,input {
   height:100%;
   transform-style:preserve-3d;
   transition:transform .6s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
   position:relative
 }
 .flip-card.flipped .flip-card-inner {
@@ -1130,7 +1136,7 @@ button,input {
   inset:0
 }
 .flip-face.back {
-  background:linear-gradient(180deg, var(--bg-surface), #1a2030);
+  background:linear-gradient(180deg, var(--bg-surface), var(--bg-deep));
   transform:rotateY(180deg)
 }
 .flip-face .word {
@@ -1344,7 +1350,7 @@ button,input {
   font-size:var(--text-base);
   text-align:left;
   cursor:pointer;
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t);
   justify-content:space-between;
   align-items:center;
   gap:12px;
@@ -1459,7 +1465,7 @@ button,input {
   font:inherit;
   font-size:var(--text-lg);
   text-align:center;
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), color var(--t), transform var(--t);
   outline:none;
   padding:0 56px 0 20px
 }
@@ -1562,7 +1568,7 @@ button,input {
   color:var(--text-primary);
   font-size:var(--text-base);
   cursor:pointer;
-  transition:all var(--t);
+  transition:background var(--t), border-color var(--t), box-shadow var(--t), color var(--t), transform var(--t), opacity var(--t);
   text-align:center;
   -webkit-user-select:none;
   user-select:none;
@@ -1878,7 +1884,7 @@ button,input {
   font-size:var(--text-sm);
   color:var(--text-primary);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t);
   align-items:center;
   gap:8px;
   padding:8px 12px;
@@ -1994,19 +2000,19 @@ button,input {
   font-size:18px
 }
 .toast.ok {
-  border-left:3px solid var(--success)
+  border-color:rgba(34,197,94,0.4)
 }
 .toast.ok i {
   color:var(--success)
 }
 .toast.err {
-  border-left:3px solid var(--danger)
+  border-color:rgba(239,68,68,0.4)
 }
 .toast.err i {
   color:var(--danger)
 }
 .toast.info {
-  border-left:3px solid var(--accent)
+  border-color:rgba(16,185,129,0.4)
 }
 .toast.info i {
   color:var(--accent)
@@ -2161,7 +2167,7 @@ button,input {
   border:1px solid var(--bg-subtle);
   border-radius:var(--radius-md);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t), box-shadow var(--t), transform var(--t);
   color:inherit;
   align-items:stretch;
   gap:14px;
@@ -2172,7 +2178,8 @@ button,input {
 .folder-card:hover {
   border-color:var(--accent);
   box-shadow:var(--shadow-md);
-  transform:translateY(-3px)
+  transform:translateY(-3px);
+  will-change:transform
 }
 .folder-card .folder-emoji {
   border-radius:var(--radius-sm);
@@ -2490,7 +2497,7 @@ button,input {
   border:1px solid var(--bg-subtle);
   border-radius:var(--radius-md);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t), box-shadow var(--t), transform var(--t);
   color:inherit;
   flex-direction:column;
   gap:12px;
@@ -2688,7 +2695,7 @@ button,input {
   border-radius:var(--radius-sm);
   cursor:pointer;
   height:40px;
-  transition:all var(--t);
+  transition:background var(--t), transform var(--t);
   font-size:22px
 }
 .emoji-opt:hover {
@@ -2803,7 +2810,7 @@ button,input {
   font:inherit;
   font-size:var(--text-sm);
   cursor:pointer;
-  transition:all var(--t);
+  transition:border-color var(--t), transform var(--t);
   align-items:center;
   gap:8px;
   padding:4px 10px 4px 4px;

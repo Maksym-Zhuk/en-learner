@@ -88,7 +88,7 @@ export default function SharedDeckPage() {
             {cards.map((c) => {
               const isF = flipped.has(c.id)
               return (
-                <article key={c.id} className="bg-bg-surface border border-bg-subtle rounded-[10px] p-[18px] flex flex-col gap-2.5 transition-all cursor-pointer relative hover:-translate-y-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent" onClick={() => toggle(c.id)} style={{ minHeight: 120, justifyContent: 'center' }}>
+                <article key={c.id} role="button" tabIndex={0} className="bg-bg-surface border border-bg-subtle rounded-[10px] p-[18px] flex flex-col gap-2.5 transition-all cursor-pointer relative hover:-translate-y-[3px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:border-accent" onClick={() => toggle(c.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(c.id) } }} style={{ minHeight: 120, justifyContent: 'center' }}>
                   {!isF ? (
                     <>
                       <h3 className="text-[15px] font-medium text-accent">{c.word}</h3>

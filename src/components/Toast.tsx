@@ -26,7 +26,7 @@ interface ToastProps {
 
 export function ToastContainer({ items }: ToastProps) {
   return (
-    <div className="fixed top-6 right-6 z-[999] flex flex-col gap-2.5 pointer-events-none">
+    <div className="fixed top-6 right-6 z-[999] flex flex-col gap-2.5 pointer-events-none" aria-live="polite" aria-atomic="true">
       {items.map((item) => (
         <div
           key={item.id}

@@ -18,6 +18,7 @@ export const decks = pgTable('decks', {
   id: uuid('id').primaryKey().defaultRandom(),
   user_id: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  emoji: text('emoji').notNull().default('📘'),
   folder_id: uuid('folder_id').references(() => folders.id, { onDelete: 'set null' }),
   share_token: uuid('share_token').unique(),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

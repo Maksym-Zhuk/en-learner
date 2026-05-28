@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
         id: decks.id,
         user_id: decks.user_id,
         name: decks.name,
+        emoji: decks.emoji,
         folder_id: decks.folder_id,
         share_token: decks.share_token,
         created_at: decks.created_at,
